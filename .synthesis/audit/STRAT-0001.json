@@ -1,0 +1,22 @@
+[
+  {
+    "artifact_id": "STRAT-0001",
+    "stage": "DEFINE",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "human-signoff",
+    "constitution_version": null,
+    "quiz_questions": [
+      "Why is an event-driven architecture preferred over a polling-based approach for this specific application, and what is the primary risk identified with that choice?",
+      "Why has the team explicitly decided against building a persistent document management system for the workspaces?",
+      "Given the risk of backend subscription limits, what mitigation strategy is proposed to ensure users don't experience total synchronization failure in large groups?"
+    ],
+    "quiz_answers": [
+      "because it will accelerate team-decision by making an imnediate real-time quadrant framework",
+      "because we don't need long term document storage",
+      "make client robust by implementing connections batching and error handling"
+    ],
+    "quiz_justification": "missed: Why is an event-driven architecture preferred over a polling-based approach for this specific application, and what is the primary risk identified with that choice?; Why has the team explicitly decided against building a persistent document management system for the workspaces?; Given the risk of backend subscription limits, what mitigation strategy is proposed to ensure users don't experience total synchronization failure in large groups?"
+  }
+]
