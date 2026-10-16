@@ -1,7 +1,7 @@
 ---
 artifact_type: strategy
 id: STRAT-0001
-status: Draft
+status: Approved
 ---
 
 # Strategy Document: Quadra will accelerate team decision-making by replacing ad-hoc alignment tools with a structured, real-time synchronized quadrant framework.
@@ -23,7 +23,7 @@ status: Draft
 
 | Criterion | Measurement | Target | Baseline | Cadence |
 |---|---|---|---|---|
-| Real-time latency for quadrant updates | Client-side timestamp delta for message propagation | < 200ms | N/A (New feature) | Per release |
+| Real-time latency for quadrant updates | Client-side timestamp delta for message propagation | < 2000ms | N/A (New feature) | Per release |
 
 ## Non-Goals (What We Deliberately Skip in v1)
 
@@ -118,6 +118,6 @@ Introduces significant latency and overhead compared to event-driven subscriptio
 ## Sign-Off
 
 **Authored by:** google:gemini-3.1-flash-lite  
-**Reviewed by:** _(pending)_ — _(pending)_
+**Reviewed by:** Marco — mcrasso@marsie.io
 
-**Ready for SPEC:** [ ] Yes [ ] No
+**Ready for SPEC:** [x] Yes [ ] No
