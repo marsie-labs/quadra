@@ -1,0 +1,65 @@
+{
+  "edges": [
+    {
+      "child": "quadra-app",
+      "parent": "SPEC-0001",
+      "kind": "implements"
+    },
+    {
+      "child": "session-service",
+      "parent": "SPEC-0001",
+      "kind": "implements"
+    },
+    {
+      "child": "supabase",
+      "parent": "SPEC-0001",
+      "kind": "implements"
+    },
+    {
+      "child": "quadra-system",
+      "parent": "SPEC-0001",
+      "kind": "implements"
+    },
+    {
+      "child": "quadra-app",
+      "parent": "ADR-0001",
+      "kind": "governs"
+    },
+    {
+      "child": "quadra-app",
+      "parent": "ADR-0002",
+      "kind": "governs"
+    },
+    {
+      "child": "session-service",
+      "parent": "ADR-0001",
+      "kind": "governs"
+    },
+    {
+      "child": "session-service",
+      "parent": "ADR-0002",
+      "kind": "governs"
+    },
+    {
+      "child": "supabase",
+      "parent": "ADR-0001",
+      "kind": "governs"
+    },
+    {
+      "child": "supabase",
+      "parent": "ADR-0002",
+      "kind": "governs"
+    },
+    {
+      "child": "quadra-system",
+      "parent": "ADR-0001",
+      "kind": "governs"
+    },
+    {
+      "child": "quadra-system",
+      "parent": "ADR-0002",
+      "kind": "governs"
+    }
+  ],
+  "satisfies": []
+}
