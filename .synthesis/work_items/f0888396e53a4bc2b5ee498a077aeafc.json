@@ -43,142 +43,128 @@
   "pending_artifacts": {
     "SPEC": {
       "definition_of_done": [
-        "A POST /sessions request with a valid, non\u2011empty feature_name returns 201 and a response containing a UUIDv4 session_id, status \"open\", a link matching \"/sessions/{session_id}\", and a canvas object with the four default quadrants.",
-        "The created session record is persisted in the Supabase `workspaces` table within 2 seconds of the request.",
-        "A POST /sessions request with a missing or empty feature_name returns 422 and does not create any session record.",
-        "The initial canvas state is emitted via Supabase Realtime and received by a subscribed NiceGUI client within 2000\u202fms of session creation."
+        "POST /sessions creates a unique session record in Supabase with initial quadrant structure",
+        "POST /sessions returns 201 status code and correct JSON response for valid input",
+        "POST /sessions returns 422 status code for missing or empty feature_name",
+        "NiceGUI canvas page /sessions/{session_id} renders correctly for existing sessions",
+        "NiceGUI canvas page /sessions/{session_id} handles non-existent session IDs with a 'not found' message",
+        "Session creation process completes within 2000ms threshold"
       ],
-      "regression_guardrails": [
-        "The session link format remains exactly \"/sessions/{session_id}\" for all sessions.",
-        "Supabase schema for the `workspaces` table is unchanged except for the insertion of the new record."
-      ],
+      "regression_guardrails": [],
       "scenarios": [
         {
-          "name": "successful workspace creation",
+          "name": "create session success",
           "given": [
-            "no existing session with feature name \"Demo\""
+            "the system is initialized with schema 0001_workspace.sql"
           ],
           "when": [
-            "the client POSTs to /sessions with body {\"feature_name\": \"Demo\"}"
+            "a POST request is sent to /sessions with feature_name 'Test Feature'"
           ],
           "then": [
-            "the response status is 201",
-            "the response body contains a session_id matching the UUIDv4 pattern",
-            "the response body contains status \"open\"",
-            "the response body contains link \"/sessions/<session_id>\" where <session_id> matches the session_id",
-            "the response body contains canvas.quadrants equal to [\"IS\", \"IS NOT\", \"DOES\", \"DOES NOT\"]",
-            "a record with that session_id exists in the Supabase workspaces table"
+            "the response is 201",
+            "a session record exists in Supabase with status 'open'",
+            "the response body contains a valid session_id and link",
+            "tests/api/test_sessions.py::test_create_session_success passes"
           ]
         },
         {
-          "name": "workspace creation fails with empty feature_name",
+          "name": "create session validation fails on empty input",
           "given": [
-            "a request body {\"feature_name\": \"\"}"
+            "the API route exists"
           ],
           "when": [
-            "the client POSTs to /sessions with that body"
+            "a POST request is sent to /sessions with feature_name ''"
           ],
           "then": [
-            "the response status is 422",
-            "no new record appears in the Supabase workspaces table"
+            "the response is 422",
+            "no session record is created in Supabase",
+            "tests/api/test_sessions.py::test_create_session_validation passes"
           ]
         },
         {
-          "name": "workspace creation latency under two seconds",
+          "name": "access existing session link",
           "given": [
-            "a timer started immediately before the POST request"
+            "a valid session with id 'S123' exists in Supabase"
           ],
           "when": [
-            "the client POSTs to /sessions with a valid feature_name"
+            "a GET request is made to /sessions/S123"
           ],
           "then": [
-            "the elapsed time measured by the timer is less than 2 seconds",
-            "the response status is 201"
+            "the /sessions/S123 page renders the canvas with quadrants IS, IS NOT, DOES, DOES NOT"
           ]
         },
         {
-          "name": "realtime event emitted after creation",
+          "name": "access non-existent session link",
           "given": [
-            "a NiceGUI client subscribed to Supabase Realtime channel for new session events",
-            "the client records the current time"
+            "no session with id 'UNKNOWN' exists in Supabase"
           ],
           "when": [
-            "the client POSTs to /sessions with a valid feature_name"
+            "a GET request is made to /sessions/UNKNOWN"
           ],
           "then": [
-            "the client receives a realtime event containing the initial canvas data within 2000 ms of the POST response",
-            "the event payload includes the same session_id returned in the HTTP response"
-          ]
-        },
-        {
-          "name": "session link format unchanged",
-          "given": [
-            "a session has been created successfully and its response link is recorded"
-          ],
-          "when": [
-            "the recorded link is examined"
-          ],
-          "then": [
-            "the link matches the pattern \"/sessions/{uuid}\" where {uuid} is a valid UUIDv4"
+            "the /sessions/UNKNOWN page displays 'Session not found'"
           ]
         }
       ],
       "feature_name": "Workspace and Realtime Canvas Initialization",
-      "context": "Quadra needs an instant way for teams to start a collaborative decision\u2011making session. Users should be able to create a new workspace by providing a feature name and receive a unique link that opens a NiceGUI canvas showing four decision quadrants. The creation process must persist the session in Supabase and broadcast the initial canvas state to all connected clients within 2\u202fseconds, without any authentication step.",
+      "context": "The project currently has no mechanism for initializing collaborative workspaces. This feature implements the entry point for team sessions, allowing users to define a feature or topic and automatically provision a session, its associated data in Supabase, and a Realtime-synchronized UI. This is critical for establishing the team's shared workspace as envisioned in STRAT-0001.",
       "c4_elements": [
         "quadra-app",
         "session-service",
         "supabase"
       ],
       "api_contracts": [
-        "POST /sessions (FastAPI route in quadra-app) \u2013 request body SessionCreateRequest { feature_name: string (non\u2011empty) }, no authentication, returns 201 with SessionCreateResponse { session_id: uuid, status: \"open\", link: \"/sessions/{session_id}\", canvas: { quadrants: [\"IS\", \"IS NOT\", \"DOES\", \"DOES NOT\"] } } or 422 on validation error."
+        "POST /sessions, request body {\"feature_name\": \"string\"}, response 201 {\"session_id\": \"uuid\", \"status\": \"open\", \"link\": \"/sessions/{session_id}\", \"canvas\": {\"quadrants\": [\"IS\", \"IS NOT\", \"DOES\", \"DOES NOT\"]}}"
       ],
       "data_models": [
-        "SessionCreateRequest \u2013 Pydantic model in src/quadra/api.py",
-        "SessionCreateResponse \u2013 Pydantic model in src/quadra/api.py"
+        "src/quadra/sessions.py: Session dataclass",
+        "src/quadra/api.py: SessionCreateRequest, SessionCreateResponse Pydantic models",
+        "supabase/migrations/0001_workspace.sql: workspaces, canvases, and quadrants tables"
       ],
       "dependencies": [
-        "Supabase (PostgreSQL + Realtime) accessed via supabase-py (environment variables SUPABASE_URL, SUPABASE_KEY)",
-        "NiceGUI UI framework (FastAPI container)"
+        "Supabase Python SDK (supabase-py)",
+        "NiceGUI UI framework",
+        "FastAPI backend"
       ],
       "needed_by": [],
       "constraints": [
-        "Session creation latency must be < 2 seconds (STRAT\u20110001 goal)",
-        "session_id must be a UUIDv4",
-        "feature_name must be a non\u2011empty string"
+        "Session creation latency < 2000ms",
+        "feature_name must be non-empty",
+        "session_id must be a random UUIDv4",
+        "Realtime push to NiceGUI clients via WebSockets without polling"
       ],
       "decisions": [
         {
-          "text": "We will generate session_id as a random UUIDv4 for every new session.",
+          "text": "We will use UUIDv4 for session identification to ensure uniqueness and security for link-based access control.",
           "binds_beyond_feature": true,
-          "title": "",
+          "title": "Use UUIDv4 for Session IDs",
           "context": "",
           "alternatives": [],
           "positive_consequences": [],
           "negative_consequences": [],
           "enforcement": [
             {
-              "rule": "session_id must be a UUIDv4",
+              "rule": "POST /sessions returns 201 with valid session data",
               "kind": "deterministic",
-              "mechanism": "tests/api/test_create_session.py::test_session_id_is_uuid",
-              "scope": "system-wide"
+              "mechanism": "tests/api/test_sessions.py::test_create_session_success",
+              "scope": "session-service"
             }
           ]
         },
         {
-          "text": "We will require feature_name to be a non\u2011empty string in the session creation request.",
+          "text": "We will strictly enforce non-empty feature_name validation at the API layer.",
           "binds_beyond_feature": true,
-          "title": "",
+          "title": "Enforce Feature Name Validation",
           "context": "",
           "alternatives": [],
           "positive_consequences": [],
           "negative_consequences": [],
           "enforcement": [
             {
-              "rule": "feature_name must be non\u2011empty",
+              "rule": "POST /sessions returns 422 for empty feature_name",
               "kind": "deterministic",
-              "mechanism": "tests/api/test_create_session.py::test_feature_name_non_empty",
-              "scope": "system-wide"
+              "mechanism": "tests/api/test_sessions.py::test_create_session_validation",
+              "scope": "session-service"
             }
           ]
         }
@@ -187,49 +173,51 @@
         "ADR-0001",
         "ADR-0002"
       ],
-      "critical_components": [],
+      "critical_components": [
+        "session-service"
+      ],
       "architecture_change": {
-        "summary": "Add core system, NiceGUI FastAPI container, session service component, and Supabase external system to support workspace/session creation.",
+        "summary": "",
         "added": [
           {
             "id": "quadra-system",
             "name": "Quadra System",
             "level": "system",
             "parent": "",
-            "owns": "Providing a collaborative real-time quadrant workspace; Exposing HTTP API for session creation; Coordinating with Supabase for persistence and realtime events",
-            "does_not_own": "User authentication (link\u2011based access only); Document management beyond quadrant data",
+            "owns": "Coordinates real-time decision-making via collaborative quadrants.",
+            "does_not_own": "",
             "deployment": "",
             "technology": ""
           },
           {
             "id": "quadra-app",
-            "name": "Quadra NiceGUI App",
+            "name": "NiceGUI Application",
             "level": "container",
             "parent": "quadra-system",
-            "owns": "Serving the UI and HTTP API; Hosting the websocket connection for realtime updates",
-            "does_not_own": "Direct data persistence (delegated to Supabase); Business\u2011logic of session creation (delegated to session-service)",
-            "deployment": "Docker container, runs on cloud VM or PaaS",
-            "technology": "FastAPI + NiceGUI (Python)"
+            "owns": "",
+            "does_not_own": "",
+            "deployment": "",
+            "technology": "FastAPI, NiceGUI, Python"
           },
           {
             "id": "session-service",
-            "name": "Session Service",
-            "level": "component",
-            "parent": "quadra-app",
-            "owns": "Creating session records and associated canvas quadrants; Validating SessionCreateRequest payloads",
-            "does_not_own": "Serving UI pages (handled by NiceGUI); Realtime push (handled by NiceGUI websocket layer)",
+            "name": "Session Management Service",
+            "level": "container",
+            "parent": "quadra-system",
+            "owns": "",
+            "does_not_own": "",
             "deployment": "",
-            "technology": "Python module using supabase-py"
+            "technology": "Python module, supabase-py"
           },
           {
             "id": "supabase",
             "name": "Supabase",
             "level": "system",
             "parent": "",
-            "owns": "Persisting workspace (session) data; Emitting realtime change events to subscribed clients",
-            "does_not_own": "Application business logic; HTTP API for session creation",
+            "owns": "PostgreSQL storage and Realtime sync engine.",
+            "does_not_own": "",
             "deployment": "",
-            "technology": "PostgreSQL + Supabase Realtime"
+            "technology": ""
           }
         ],
         "changed": [],
@@ -238,23 +226,25 @@
           {
             "source": "quadra-app",
             "target": "session-service",
-            "description": "Invokes component methods to create sessions via internal function call"
+            "description": "REST API requests for session instantiation."
           },
           {
             "source": "session-service",
             "target": "supabase",
-            "description": "Persists session and canvas records; subscribes to Supabase Realtime for change events"
+            "description": "Persists session/quadrant data and triggers Realtime broadcasts."
           },
           {
-            "source": "quadra-app",
-            "target": "supabase",
-            "description": "Websocket layer receives Realtime events from Supabase and pushes them to connected NiceGUI clients"
+            "source": "supabase",
+            "target": "quadra-app",
+            "description": "Subscribes to quadrant updates and pushes to browser via WebSocket."
           }
         ],
         "relations_removed": [],
         "sections": {
-          "Architectural Style": "Event\u2011driven, layered architecture. The outer layer is a FastAPI/NiceGUI container exposing HTTP endpoints and a websocket channel. Business logic lives in the Session Service component, which interacts with an external Supabase system that offers both durable storage and realtime change notifications. The design favours low\u2011latency event propagation over polling, aligning with STRAT\u20110001's rejection of polling\u2011based synchronization.",
-          "System Mission": "Quadra provides an instantly\u2011available, collaborative workspace where teams can create a session (identified by a unique link) and edit four decision quadrants in real time. The system must create a session, persist its initial state, and broadcast updates within 2\u202fseconds, enabling seamless synchronous decision\u2011making without authentication overhead."
+          "Architectural_Style": "The system follows a reactive, event-driven architecture. The client-side UI (NiceGUI) interacts with a lightweight FastAPI controller that delegates session persistence to Supabase. Supabase acts as both the primary database and the real-time event bus, ensuring that changes to the quadrant state are propagated to all connected clients within the 2000ms latency requirement.",
+          "Business_Goals": "To provide a standardized, reliable, and real-time collaboration environment for team decision-making, specifically optimized for the rapid instantiation of workspace sessions.",
+          "System_Decomposition": "The system consists of the NiceGUI-based web application, a session management service, and the external Supabase platform. Communication is centered around the Supabase Realtime engine, which synchronizes state between the backend and all active clients.",
+          "System_Mission": "Quadra facilitates real-time team alignment by providing an ephemeral, highly responsive workspace where participants can co-create and manage quadrant-based decisions."
         }
       },
       "path": "docs/specs/SPEC-0001.md"
