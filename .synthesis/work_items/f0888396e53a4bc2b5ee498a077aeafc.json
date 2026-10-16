@@ -34,7 +34,12 @@
   "current_index": 3,
   "rejection_count": 0,
   "pbi_id": null,
-  "child_ids": [],
+  "child_ids": [
+    "f0888396e53a4bc2b5ee498a077aeafc-create-session-endpoint",
+    "f0888396e53a4bc2b5ee498a077aeafc-reject-empty-feature-name",
+    "f0888396e53a4bc2b5ee498a077aeafc-render-existing-session-canvas",
+    "f0888396e53a4bc2b5ee498a077aeafc-render-session-not-found"
+  ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0001.md",
     "DEFINE": "docs/strategy/STRAT-0001.md",

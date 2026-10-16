@@ -1,0 +1,53 @@
+{
+  "id": "f0888396e53a4bc2b5ee498a077aeafc-render-existing-session-canvas",
+  "preset": "greenfield-project",
+  "sequence": [
+    {
+      "stage": "DISCOVER",
+      "gate": "DISCOVER_EXIT"
+    },
+    {
+      "stage": "DEFINE",
+      "gate": "GATE_1"
+    },
+    {
+      "stage": "SPEC",
+      "gate": "SPEC_REVIEW"
+    },
+    {
+      "stage": "PBI_PLANNING",
+      "gate": "PBI_VALIDATION"
+    },
+    {
+      "stage": "ASSEMBLE",
+      "gate": "QUALITY_GATE"
+    },
+    {
+      "stage": "REVIEW",
+      "gate": "REVIEW_GATE"
+    },
+    {
+      "stage": "INTEGRATE",
+      "gate": "ACCEPTANCE"
+    }
+  ],
+  "current_index": 4,
+  "rejection_count": 0,
+  "pbi_id": "render-existing-session-canvas",
+  "child_ids": [],
+  "artifact_paths": {
+    "DISCOVER": "docs/discovery/DG-0001.md",
+    "DEFINE": "docs/strategy/STRAT-0001.md",
+    "SPEC": "docs/specs/SPEC-0001.md",
+    "PBI_PLANNING": "docs/pbis/SPEC-0001/PBI-0003.md"
+  },
+  "pending_artifacts": {},
+  "rework_notes": null,
+  "trunk_merge_pending": false,
+  "clarification_questions": {},
+  "clarifications": {},
+  "clarification_rounds": {},
+  "settings": {
+    "token_quota": null
+  }
+}
