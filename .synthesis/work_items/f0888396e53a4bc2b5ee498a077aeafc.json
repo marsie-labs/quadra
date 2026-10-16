@@ -42,9 +42,21 @@
   "pending_artifacts": {},
   "rework_notes": null,
   "trunk_merge_pending": false,
-  "clarification_questions": {},
+  "clarification_questions": {
+    "SPEC": [
+      "What is the concrete feature name to use for this spec (e.g., \"Workspace Instantiation Service\")?",
+      "Which C4 element IDs are directly impacted by this change (e.g., \"workspace-service\", \"session-manager\", \"state-container\")?",
+      "What is the exact API contract for creating a new workspace/session (HTTP method, URL path, required request body fields, authentication requirements, expected response status code and body schema)?",
+      "What are the names and locations (file paths) of the data model definitions and JSON schema files for the workspace creation request and response (e.g., \"WorkspaceCreateRequest\", \"workspace_create_schema.json\")?",
+      "Does this feature depend on any external services or components not already listed (e.g., realtime-backend subscription service) and if so, what are they?",
+      "Are there any specific constraints that must be enforced for workspace creation (e.g., creation latency < 2 seconds, idempotent request handling, rate limiting, required headers)?",
+      "Are there any existing behaviors or system invariants that must be preserved as regression guardrails (e.g., existing session link format, backward compatibility with prior workspace creation mechanisms)?"
+    ]
+  },
   "clarifications": {},
-  "clarification_rounds": {},
+  "clarification_rounds": {
+    "SPEC": 1
+  },
   "settings": {
     "token_quota": null
   }
