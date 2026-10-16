@@ -7,3 +7,6 @@
 {"at": "2026-10-16T22:34:55+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "DEFINE", "pbi_id": null, "model": "google:gemini-3.1-flash-lite", "requests": 1, "input_tokens": 2470, "output_tokens": 105}
 {"at": "2026-10-16T22:38:26+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "SPEC", "pbi_id": null, "model": "groq:openai/gpt-oss-120b", "requests": 2, "input_tokens": 2507, "output_tokens": 1072}
 {"at": "2026-10-16T22:38:48+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "SPEC", "pbi_id": null, "model": "groq:openai/gpt-oss-120b", "requests": 1, "input_tokens": 5280, "output_tokens": 708}
+{"at": "2026-10-16T22:50:04+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "SPEC", "pbi_id": null, "model": "groq:openai/gpt-oss-120b", "requests": 2, "input_tokens": 0, "output_tokens": 0}
+{"at": "2026-10-16T22:50:48+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "SPEC", "pbi_id": null, "model": "groq:openai/gpt-oss-120b", "requests": 2, "input_tokens": 3852, "output_tokens": 1287}
+{"at": "2026-10-16T22:51:45+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "SPEC", "pbi_id": null, "model": "groq:openai/gpt-oss-120b", "requests": 1, "input_tokens": 6082, "output_tokens": 2375}

@@ -1,0 +1,14 @@
+[
+  {
+    "artifact_id": "SPEC-0001",
+    "stage": "SPEC",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "adr-rule-scenarios, human-signoff",
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null
+  }
+]
