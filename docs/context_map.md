@@ -3,7 +3,7 @@ artifact_type: context map
 id: CTXMAP-quadra
 scope: project
 status: Generated
-generated_from: none
+generated_from: 7f7692a7e76fb69656e6b79ebe0b60eb269534e7
 ---
 
 # Context Map: quadra
@@ -20,7 +20,10 @@ generated_from: none
 
 | Unit | Kind | Location | Depends on |
 |------|------|----------|------------|
-|  |  |  |  |
+| Quadra System (quadra-system) | system | docs/architecture.md#8-system-decomposition |  |
+| NiceGUI Application (quadra-app) | container | docs/architecture.md#8-system-decomposition | Session Management Service |
+| Session Management Service (session-service) | component | docs/architecture.md#8-system-decomposition | Supabase |
+| Supabase (supabase) | system | docs/architecture.md#8-system-decomposition | NiceGUI Application |
 
 ## Glossary
 
@@ -32,6 +35,10 @@ generated_from: none
 
 | If the work concerns | Go to | Kind |
 |----------------------|-------|------|
+| Workspace and Realtime Canvas Initialization (SPEC-0001) | docs/specs/SPEC-0001.md | spec |
+| Use UUIDv4 for Session IDs (ADR-0001) | docs/adrs/ADR-0001.md | ADR |
+| Enforce Feature Name Validation (ADR-0002) | docs/adrs/ADR-0002.md | ADR |
+| Architecture (ARCH-0001) | docs/architecture.md | architecture |
 
 ## Validation Checklist
 
