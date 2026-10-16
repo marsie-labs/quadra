@@ -1,7 +1,7 @@
 ---
 artifact_type: architecture
 id: ARCH-0001
-version: 1.0
+version: 1.1
 status: Approved
 ---
 
@@ -114,7 +114,7 @@ session_service -->|Persists session/quadrant data and triggers Realtime broadca
 
 ## 14. Open Architectural Risks
 
-(none yet)
+Realtime push is deferred. SPEC-0001 describes Supabase Realtime events pushed to every connected client through NiceGUI's WebSocket without polling, and the supabase to quadra-app relation in section 9 records it, but SPEC-0001's PBIs build only session creation and the canvas page. Until a later spec builds it, nothing proves that supabase-py's async Realtime client runs inside NiceGUI's event loop and meets STRAT-0001's < 2000ms target, which is the reason NiceGUI was chosen. The spec for Intent 2 (card operations) should build Realtime first, in its own PBI, before any card UI relies on it.
 
 ## 15. Architecture Decision Index
 
@@ -129,3 +129,4 @@ session_service -->|Persists session/quadrant data and triggers Realtime broadca
 | Version | Date | Summary | Triggered by |
 |---------|------|---------|--------------|
 | 1.0 | 2026-10-16 | (no summary) | SPEC-0001 |
+| 1.1 | 2026-10-16 | Record the deferral of Realtime push as an open risk | SPEC-0001 PBI review |
