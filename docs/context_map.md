@@ -3,7 +3,7 @@ artifact_type: context map
 id: CTXMAP-quadra
 scope: project
 status: Generated
-generated_from: 7f7692a7e76fb69656e6b79ebe0b60eb269534e7
+generated_from: c0378b87437926846ffab90cf8608ec971ee7071
 ---
 
 # Context Map: quadra
