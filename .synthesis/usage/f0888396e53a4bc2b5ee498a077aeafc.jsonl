@@ -2,3 +2,4 @@
 {"at": "2026-10-16T22:13:20+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "DEFINE", "pbi_id": null, "model": "google:gemini-3.1-flash-lite", "requests": 1, "input_tokens": 4165, "output_tokens": 437}
 {"at": "2026-10-16T22:13:21+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "DEFINE", "pbi_id": null, "model": "google:gemini-3.1-flash-lite", "requests": 1, "input_tokens": 2364, "output_tokens": 160}
 {"at": "2026-10-16T22:21:08+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "DEFINE", "pbi_id": null, "model": "google:gemini-3.1-flash-lite", "requests": 1, "input_tokens": 2427, "output_tokens": 94}
+{"at": "2026-10-16T22:29:05+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "DEFINE", "pbi_id": null, "model": "google:gemini-3.1-flash-lite", "requests": 1, "input_tokens": 2411, "output_tokens": 208}
