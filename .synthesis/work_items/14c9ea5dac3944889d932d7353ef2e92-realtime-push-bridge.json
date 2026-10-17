@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 5,
   "rejection_count": 0,
   "pbi_id": "realtime-push-bridge",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0001.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: In test_push_delivery_without_polling, the latency endpoint is recorded in _record_websocket_push after core.sio.emit, while user_b.should_see runs outside the timed interval. This proves timely server-side emission, not the required simulated-user DOM update within 2000ms; capture the matching simulated DOM observation timestamp and assert that elapsed time instead.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
