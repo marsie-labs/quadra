@@ -1,7 +1,7 @@
 ---
 artifact_type: strategy
 id: STRAT-0002
-status: Draft
+status: Approved
 ---
 
 # Strategy Document: We will bridge the collaborative gap by building a real-time event pipeline as the foundational service for all card-based interactions.
@@ -10,7 +10,7 @@ status: Draft
 
 **Thesis:** We will bridge the collaborative gap by building a real-time event pipeline as the foundational service for all card-based interactions.
 
-**From Problem Graph:** (none)
+**From Problem Graph:** DG-0002
 
 ## Goals (What We Aim to Achieve)
 
@@ -19,9 +19,14 @@ status: Draft
 **Success Metric:** End-to-end latency from database mutation to client rendering < 2000ms.  
 **Owner:** Engineering
 
-### Goal 2: Enable full CRUD operations for cards within the quadrant UI.
+### Goal 2: Enable card operations within the quadrant UI: insert, update, soft-delete (the card is hidden from the canvas but kept) and relocate between quadrants.
 **Why:** Participants need to interact with the canvas to make decisions.  
 **Success Metric:** 100% of inserted/moved cards correctly reflected across all active sessions.  
+**Owner:** Engineering
+
+### Goal 3: Keep card creation and movement smooth under light network latency.
+**Why:** A participant should not wait for a round trip before seeing their own change.  
+**Success Metric:** A participant sees their own card change at once, optimistically or by quick confirmation, and the confirmed state within the 2000ms threshold.  
 **Owner:** Engineering
 
 ## Success Criteria (Observable & Verifiable)
@@ -55,7 +60,8 @@ Increases risk of state divergence between participants; complicates the synchro
 
 - Realtime synchronization service
 - Card persistence schema (quadrant, index, display name, timestamp)
-- Card CRUD UI operations
+- Card operations in the UI: insert, update, soft-delete and relocate
+- Optimistic or quick-confirm UI state for a participant's own card changes
 - NiceGUI event handling for collaborative updates
 
 ### Out of Scope (Deferred)
@@ -133,6 +139,6 @@ Increases risk of state divergence between participants; complicates the synchro
 ## Sign-Off
 
 **Authored by:** google:gemini-3.1-flash-lite  
-**Reviewed by:** _(pending)_ — _(pending)_
+**Reviewed by:** Marco — mcrasso@marsie.io
 
-**Ready for SPEC:** [ ] Yes [ ] No
+**Ready for SPEC:** [x] Yes [ ] No
