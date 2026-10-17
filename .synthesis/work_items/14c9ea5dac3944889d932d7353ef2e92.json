@@ -41,9 +41,15 @@
   "pending_artifacts": {},
   "rework_notes": null,
   "trunk_merge_pending": false,
-  "clarification_questions": {},
+  "clarification_questions": {
+    "DEFINE": [
+      "What are the specific requirements for author identification and timestamping for cards beyond the basic relational fields?"
+    ]
+  },
   "clarifications": {},
-  "clarification_rounds": {},
+  "clarification_rounds": {
+    "DEFINE": 1
+  },
   "settings": {
     "token_quota": null
   }
