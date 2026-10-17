@@ -7,7 +7,11 @@ authors = [
     { name = "Marco", email = "mcrasso@marsie.io" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "fastapi>=0.143.3",
+    "nicegui>=3.18.0",
+    "supabase>=2.33.0",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -15,6 +19,9 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.3.6",
     "pytest>=9.1.1",
     "pytest-bdd>=9.0.0",
+    "python-dotenv>=1.2.4",
 ]
