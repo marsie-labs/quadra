@@ -74,12 +74,14 @@ class Canvas:
         self._cards: dict[str, Card] = {}
         self._buffered: list[SessionChange] = []  # changes seen while the snapshot loads
         self._loading = True
+        self._registration: asyncio.Future[None] | None = None
+        self._stopped = False  # the client disconnected
 
     async def start(self) -> None:
         """Register for pushes, then load the active cards and show them."""
         await self._client.connected()
         snapshot = await self._register_and_load()
-        if snapshot is None:
+        if snapshot is None or self._stopped:
             return
         self._show(snapshot)
 
@@ -96,14 +98,21 @@ class Canvas:
 
     async def _register_and_load(self) -> list[Card] | None:
         """Subscribe, then load the snapshot; None (after showing an error) on failure."""
+        # Cleanup comes first: a disconnect while the subscription is becoming ready
+        # must still release it once registration settles.
+        self._client.on_disconnect(self._stop)
+        self._registration = asyncio.ensure_future(
+            realtime.register_view(self._session_id, str(self._client.id), self._on_change)
+        )
         try:
-            await realtime.register_view(
-                self._session_id, str(self._client.id), self._on_change
-            )
-            self._client.on_disconnect(self._stop)
+            await asyncio.shield(self._registration)
+            if self._stopped:
+                return None
             snapshot, self._quadrant_ids = await self._load()
         except Exception:
             logger.exception("Cards of session %s could not be loaded", self._session_id)
+            if self._stopped:
+                return None
             with self._client:
                 ui.label("Cards could not be loaded").classes("text-negative")
             return None
@@ -115,6 +124,10 @@ class Canvas:
         return snapshot, quadrant_ids
 
     async def _stop(self) -> None:
+        """On disconnect: wait for any registration in flight, then release the view."""
+        self._stopped = True
+        if self._registration is not None:
+            await asyncio.wait([self._registration])  # settles, never raises
         await realtime.unregister_view(self._session_id, str(self._client.id))
 
     def _on_change(self, change: SessionChange) -> None:

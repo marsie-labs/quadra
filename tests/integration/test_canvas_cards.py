@@ -5,7 +5,7 @@ import uuid
 
 import psycopg
 import pytest
-from nicegui import ui
+from nicegui import Client, ui
 from nicegui.testing import User
 
 from quadra import app as quadra_app
@@ -260,3 +260,34 @@ async def test_card_loading_failure_keeps_the_canvas(
     assert [text for text in texts if text in QUADRANTS] == list(QUADRANTS)
     assert "could not be loaded" in caplog.text  # logged, so expected here
     caplog.clear()
+
+
+async def test_disconnect_during_subscription_readiness_releases_the_subscription(
+    user: User, monkeypatch: pytest.MonkeyPatch
+):
+    session_id = create_session("Early Disconnect").session_id
+    original_register_view = realtime.register_view
+    registered = asyncio.Event()
+
+    async def register_after_a_disconnect(session_id: str, view_id: str, callback):
+        client = Client.instances[view_id]
+        for handler in client.disconnect_handlers:  # the browser leaves before readiness
+            client.safe_invoke(handler)
+        await original_register_view(session_id, view_id, callback)
+        registered.set()
+
+    monkeypatch.setattr(realtime, "register_view", register_after_a_disconnect)
+    try:
+        await _open(user, session_id)
+        async with asyncio.timeout(15):
+            await registered.wait()
+            while realtime.view_ids(session_id) or realtime.is_ready(session_id):
+                await asyncio.sleep(0.05)
+        views = realtime.view_ids(session_id)
+        # The view is dropped before Supabase acknowledges the release; unregistering
+        # takes the bridge's lock, so this returns only once that release is finished.
+        await realtime.unregister_view(session_id, "barrier")
+    finally:
+        await _release_all(session_id)
+
+    assert not views
