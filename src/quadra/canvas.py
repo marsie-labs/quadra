@@ -12,7 +12,7 @@ display name a participant types is kept per connected view: it is not an identi
 import asyncio
 import logging
 import uuid
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime
 
 from nicegui import Client, ui
@@ -35,6 +35,20 @@ class _PendingCard:
     quadrant_id: str
     content: str
     creator_display_name: str
+
+
+@dataclass(frozen=True)
+class _PendingMove:
+    """A card whose relocation request is unresolved; it lives only in this view's memory.
+
+    It remembers where the card came from, so a rejected move can put it back.
+    """
+
+    card_id: str
+    quadrant_id: str
+    index: int
+    origin_quadrant_id: str
+    origin_index: int
 
 
 def _load_quadrant_ids(session_id: str) -> list[str]:
@@ -89,6 +103,7 @@ class Canvas:
         self._quadrant_ids: list[str] = []
         self._cards: dict[str, Card] = {}
         self._pending: dict[str, _PendingCard] = {}  # card id -> insert awaiting confirmation
+        self._moving: dict[str, _PendingMove] = {}  # card id -> move awaiting confirmation
         self._drafts: dict[str, str] = {}  # card id -> text in its open editor
         self._buffered: list[SessionChange] = []  # changes seen while the snapshot loads
         self._loading = True
@@ -172,15 +187,40 @@ class Canvas:
     async def _move(self, card_id: str, position: int | None, index: float | None) -> None:
         """Move the card to quadrant `position` at `index` and show the confirmed placement.
 
-        Only the placement is sent: authorship and creation time stay the card's own.
+        The card shows as pending in the target quadrant at once, while its original
+        quadrant and index are remembered. Only the placement is sent: authorship and
+        creation time stay the card's own.
         """
-        if position not in self._quadrant_names or index is None:
-            ui.notify("Choose a quadrant and an index", type="warning")
+        move = self._start_move(card_id, position, index)
+        if move is None:
             return
-        card = await self._relocate(card_id, self._quadrant_ids[position], int(index))
+        card = await self._relocate(card_id, move.quadrant_id, move.index)
+        self._moving.pop(card_id, None)
         if card is None:
+            self._render_all(move.quadrant_id, move.origin_quadrant_id)
             return
         self._show_confirmed(card)
+
+    def _start_move(
+        self, card_id: str, position: int | None, index: float | None
+    ) -> _PendingMove | None:
+        """Show the card as pending in its target; None if there is nothing to move."""
+        if position not in self._quadrant_names or index is None:
+            ui.notify("Choose a quadrant and an index", type="warning")
+            return None
+        current = self._cards.get(card_id)
+        if current is None or card_id in self._moving:
+            return None
+        move = _PendingMove(
+            card_id, self._quadrant_ids[position], int(index), current.quadrant_id, current.index
+        )
+        self._moving[card_id] = move
+        self._render_all(move.origin_quadrant_id, move.quadrant_id)
+        return move
+
+    def _render_all(self, *quadrant_ids: str) -> None:
+        for quadrant_id in quadrant_ids:
+            self._render(quadrant_id)
 
     def _show_confirmed(self, card: Card) -> None:
         """Show a card the database confirmed, wherever the fold places it."""
@@ -362,15 +402,29 @@ class Canvas:
         column = self._columns[self._quadrant_ids.index(quadrant_id)]
         column.clear()
         with column:
-            for card in self._shown(quadrant_id):
-                self._card_view(card)
+            for card in sorted(self._placed(quadrant_id), key=lambda card: (card.index, card.id)):
+                self._card_view(card, pending=card.id in self._moving)
             for pending in self._unconfirmed(quadrant_id):
                 self._pending_view(pending)
 
-    def _shown(self, quadrant_id: str) -> list[Card]:
-        """The quadrant's cards by index, then card id."""
-        in_quadrant = (card for card in self._cards.values() if card.quadrant_id == quadrant_id)
-        return sorted(in_quadrant, key=lambda card: (card.index, card.id))
+    def _placed(self, quadrant_id: str) -> list[Card]:
+        """The cards shown in the quadrant: those in it, with moving ones at their target."""
+        return self._resting(quadrant_id) + self._arriving(quadrant_id)
+
+    def _resting(self, quadrant_id: str) -> list[Card]:
+        return [
+            card
+            for card in self._cards.values()
+            if card.id not in self._moving and card.quadrant_id == quadrant_id
+        ]
+
+    def _arriving(self, quadrant_id: str) -> list[Card]:
+        """Moving cards targeting the quadrant, placed by the index they were asked for."""
+        return [
+            replace(self._cards[move.card_id], quadrant_id=quadrant_id, index=move.index)
+            for move in self._moving.values()
+            if move.quadrant_id == quadrant_id and move.card_id in self._cards
+        ]
 
     def _unconfirmed(self, quadrant_id: str) -> list[_PendingCard]:
         """Pending cards of the quadrant; a push may have confirmed one before its insert returned."""
@@ -387,10 +441,17 @@ class Canvas:
             ui.label(pending.creator_display_name).classes("text-caption")
             ui.label("Pending").classes("text-caption text-orange")
 
-    def _card_view(self, card: Card) -> None:
-        """One card: its content or open editor, its creator and its creation time."""
-        with ui.card().tight().classes("p-2"):
-            if card.id in self._drafts:
+    def _card_view(self, card: Card, pending: bool = False) -> None:
+        """One card: its content or open editor, its creator and its creation time.
+
+        A card whose move is unresolved is dimmed and labelled, marked pending-ID, and
+        offers no controls.
+        """
+        with ui.card().tight().classes("p-2 opacity-50" if pending else "p-2") as view:
+            if pending:
+                view.mark(f"pending-{card.id}")
+                ui.label(card.content)
+            elif card.id in self._drafts:
                 self._editor(card)
             else:
                 ui.label(card.content)
@@ -402,3 +463,5 @@ class Canvas:
             ui.label(card.creator_display_name).classes("text-caption")
             created = _instant(card.created_at).strftime("%Y-%m-%d %H:%M:%S %Z")
             ui.badge(created, color="grey-7")
+            if pending:
+                ui.label("Pending").classes("text-caption text-orange")
