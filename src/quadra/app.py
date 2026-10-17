@@ -14,6 +14,7 @@ app.include_router(api.router)
 def session_page(session_id: str) -> None:
     session = get_session(session_id)
     if session is None:
+        ui.label("Session not found").classes("text-h4")
         return
     ui.label(session.feature_name).classes("text-h4")
     with ui.grid(columns=2).classes("w-full"):

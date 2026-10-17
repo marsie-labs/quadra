@@ -30,6 +30,15 @@ def test_session_page_renders_canvas_with_four_quadrants(page_client):
     assert [text for text in texts if text in QUADRANTS] == list(QUADRANTS)
 
 
+def test_session_page_displays_not_found_for_missing_session(page_client):
+    response = page_client.get("/sessions/00000000-0000-4000-8000-000000000000")
+
+    assert response.status_code == 200
+    texts = _rendered_texts(response.text)
+    assert texts == ["Session not found"]
+    assert not [text for text in texts if text in QUADRANTS]
+
+
 def test_post_sessions_is_unchanged_with_the_page_mounted(page_client):
     response = page_client.post("/sessions", json={"feature_name": "Still Works"})
 

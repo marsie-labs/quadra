@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "id": "70a9461b-4ff0-47e9-91a3-b1f8dc758d72",
+  "timestamp": "2026-10-17T02:40:59Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/app.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 17,
+              "end_line": 17,
+              "content_hash": "sha256:65f42492e5a00117cd16788793efbbf74a769079074ebbdd13efdae1abfce17a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/features/access_non_existent_session_link.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 6,
+              "content_hash": "sha256:55e850082df792d9240927e95d66ae454f443316c5334012f9d05f85cbcac03a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_session_page.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 33,
+              "end_line": 41,
+              "content_hash": "sha256:f81c15996b45071ee4a85eea94ed7e280810114011df5552ca3dd6b976f4622d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_access_non_existent_session_link.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 46,
+              "content_hash": "sha256:2aaa0f46b5283bab555b8bc2abcf1447e2caac4d0df79f9d92a71300181ee5bb"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0001/PBI-0004",
+    "rev": 1,
+    "base_revision": "92c6882637628644ebb0900c389dee706241ae44"
+  }
+}
