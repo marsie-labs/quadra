@@ -46,7 +46,7 @@
     "SPEC": "docs/specs/SPEC-0001.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Spec-level acceptance rejected the landing (contract) and rerouted to PBI_PLANNING. The Contract explicitly requires Supabase Realtime push to NiceGUI clients over WebSockets without polling, but src/quadra/app.py only loads session state once and implements no Realtime subscription or update forwarding. The deferral recorded in the PBIs and docs/architecture.md does not fulfill or amend that whole-feature requirement. Realtime push is a clear existing Contract requirement, and the diff provides no evidence that it is wrong or infeasible. Its omission is an implementation gap requiring an integration PBI, not a Contract amendment merely because earlier PBIs deferred it.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {

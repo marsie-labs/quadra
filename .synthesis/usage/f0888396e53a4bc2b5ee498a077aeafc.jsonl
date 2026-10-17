@@ -13,3 +13,4 @@
 {"at": "2026-10-16T23:04:29+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "SPEC", "pbi_id": null, "model": "google:gemini-3.1-flash-lite", "requests": 1, "input_tokens": 3000, "output_tokens": 481}
 {"at": "2026-10-16T23:04:33+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "SPEC", "pbi_id": null, "model": "google:gemini-3.1-flash-lite", "requests": 1, "input_tokens": 6525, "output_tokens": 1030}
 {"at": "2026-10-16T23:26:34+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "PBI_PLANNING", "pbi_id": null, "model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 1, "input_tokens": 9176, "output_tokens": 3178}
+{"at": "2026-10-17T02:42:33+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc", "stage": "LAND", "pbi_id": null, "model": "openrouter:openai/gpt-6.1-sol", "requests": 1, "input_tokens": 21710, "output_tokens": 376, "cache_read_tokens": 0, "cache_write_tokens": 0}
