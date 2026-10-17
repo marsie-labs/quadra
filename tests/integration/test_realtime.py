@@ -112,22 +112,20 @@ def _record_notifications(monkeypatch: pytest.MonkeyPatch, path: list[str]) -> N
 
 def _record_websocket_push(
     monkeypatch: pytest.MonkeyPatch, client_id: str, status: str, path: list[str]
-) -> tuple[asyncio.Event, list[float]]:
+) -> asyncio.Event:
     """Record the NiceGUI WebSocket update carrying `status` to one client's room."""
     pushed = asyncio.Event()
-    pushed_at: list[float] = []
     original_emit = core.sio.emit
 
     async def recording_emit(event, data=None, *args, room=None, **kwargs):
         result = await original_emit(event, data, *args, room=room, **kwargs)
         if event == "update" and room == client_id and status in json.dumps(data, default=str):
             path.append("nicegui websocket update")
-            pushed_at.append(time.perf_counter())
             pushed.set()
         return result
 
     monkeypatch.setattr(core.sio, "emit", recording_emit)
-    return pushed, pushed_at
+    return pushed
 
 
 def _mount_watch_page(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -151,6 +149,18 @@ def _mount_watch_page(monkeypatch: pytest.MonkeyPatch) -> None:
         client.on_disconnect(lambda: realtime.unregister_view(session_id, str(client.id)))
 
 
+async def _observe_in_dom(user: User, text: str) -> float:
+    """Clock reading when the simulated user's DOM first contains `text` (in memory only)."""
+    deadline = time.perf_counter() + 10
+    while True:
+        try:
+            user.find(content=text)
+            return time.perf_counter()
+        except AssertionError:  # not rendered yet
+            assert time.perf_counter() < deadline, f"{text!r} never reached the simulated DOM"
+            await asyncio.sleep(0.001)
+
+
 async def test_push_delivery_without_polling(
     user: User, create_user, monkeypatch: pytest.MonkeyPatch
 ):
@@ -170,13 +180,15 @@ async def test_push_delivery_without_polling(
         polling = _forbid_polling(monkeypatch)
         _record_notifications(monkeypatch, path)
         status = f"status-{uuid.uuid4()}"
-        pushed, pushed_at = _record_websocket_push(monkeypatch, client_b.id, status, path)
+        pushed = _record_websocket_push(monkeypatch, client_b.id, status, path)
 
+        observed = asyncio.create_task(_observe_in_dom(user_b, f"workspaces UPDATE {status}"))
         started = (await _commit_status(session_id, status))[1]
         await asyncio.wait_for(pushed.wait(), timeout=10)
+        rendered_at = await asyncio.wait_for(observed, timeout=10)
 
-        _assert_within_limit(pushed_at[0] - started)
-        await user_b.should_see(f"workspaces UPDATE {status}")
+        # Commit to the second simulated user's DOM, not merely to the server-side emit.
+        _assert_within_limit(rendered_at - started)
         assert path == ["supabase realtime notification", "nicegui websocket update"]
         assert polling == []
     finally:
