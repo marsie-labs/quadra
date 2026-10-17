@@ -1,0 +1,102 @@
+{
+  "version": "1.0.0",
+  "id": "73dd697c-0431-441e-83fc-fafdcff8ebc6",
+  "timestamp": "2026-10-17T16:13:49Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/realtime.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 4,
+              "end_line": 4,
+              "content_hash": "sha256:d68ad4578527fb50907b14c5349aec7d92a5339938a137116369b03a46721965"
+            },
+            {
+              "start_line": 39,
+              "end_line": 42,
+              "content_hash": "sha256:6ca5447370e6223472d2ccb3b48652e35dd33ad07acb6c29bc53ba9dd411fd5d"
+            },
+            {
+              "start_line": 171,
+              "end_line": 171,
+              "content_hash": "sha256:4b43af591d60ea96b9bd8db6e2504436b3ac018d71f574fb699ba50313e9c162"
+            },
+            {
+              "start_line": 175,
+              "end_line": 175,
+              "content_hash": "sha256:beaf60968fe916426360db9dc4b5c3a4e5a82872be35e9a43bfc1bb07acadd0b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/features/deliver_realtime_push_before_building_the_card_ui.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 12,
+              "content_hash": "sha256:47d17cbb64f39b50220f19f2732b8bd339d410755e8f346f198a998fca4add37"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_realtime_cards.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 239,
+              "content_hash": "sha256:5dc64a9dbb89084f4ddd7594bc11cfc099bb8196f716608c2b9429b0d1083b52"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_deliver_realtime_push_before_building_the_card_ui.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 87,
+              "content_hash": "sha256:e58a9526450ca652ec684b6b8c665320fa369c72a221c0b7de8c424b889e84fd"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0003",
+    "rev": 1,
+    "base_revision": "ec7492652a4250b0fd38d1d342ac2977e40440ba"
+  }
+}

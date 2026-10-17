@@ -1,7 +1,7 @@
 """Realtime synchronization service: pushes committed session changes to views.
 
 One Supabase Realtime channel per session, shared by every connected view of that
-session, runs on supabase-py's asynchronous Realtime client inside the NiceGUI event
+session and carrying its session, quadrant and card changes, runs on supabase-py's asynchronous Realtime client inside the NiceGUI event
 loop. Committed changes are pushed by Supabase (no polling) and dispatched in-process
 only to the views registered for the affected session.
 """
@@ -36,7 +36,10 @@ class RealtimeError(RuntimeError):
 
 @dataclass(frozen=True)
 class SessionChange:
-    """A committed INSERT or UPDATE on a session or one of its quadrant sources."""
+    """A committed INSERT or UPDATE on a session, its quadrants or its cards.
+
+    A card soft-delete arrives as an UPDATE of the card row.
+    """
 
     session_id: str
     table: str
@@ -165,10 +168,11 @@ class RealtimeBridge:
         session_id: str,
         canvas_ids: list[str],
     ) -> None:
-        """Listen to the existing session and quadrant sources, scoped server-side."""
+        """Listen to the session, quadrant and card sources, scoped server-side."""
         sources = {
             "workspaces": f"id=eq.{session_id}",
             "canvases": f"workspace_id=eq.{session_id}",
+            "cards": f"session_id=eq.{session_id}",
         }
         if canvas_ids:
             sources["quadrants"] = f"canvas_id=in.({','.join(canvas_ids)})"
