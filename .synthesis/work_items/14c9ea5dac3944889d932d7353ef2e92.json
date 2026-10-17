@@ -34,7 +34,20 @@
   "current_index": 3,
   "rejection_count": 0,
   "pbi_id": null,
-  "child_ids": [],
+  "child_ids": [
+    "14c9ea5dac3944889d932d7353ef2e92-realtime-push-bridge",
+    "14c9ea5dac3944889d932d7353ef2e92-card-persistence-service",
+    "14c9ea5dac3944889d932d7353ef2e92-realtime-card-push",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-load-cards",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-insert-card",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-edit-card",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-soft-delete-card",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-relocate-card",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-pending-insert",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-pending-move",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-rollback-failed-ops",
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-cross-client-propagation"
+  ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0002.md",
     "DEFINE": "docs/strategy/STRAT-0002.md",
