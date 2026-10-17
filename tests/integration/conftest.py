@@ -4,6 +4,10 @@ from pathlib import Path
 import psycopg
 import pytest
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from quadra import api
 
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION = ROOT / "supabase" / "migrations" / "0001_workspace.sql"
@@ -20,3 +24,11 @@ def migrated_database():
         pytest.skip("SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are required")
     with psycopg.connect(db_url, autocommit=True) as connection:
         connection.execute(MIGRATION.read_text())
+
+
+@pytest.fixture
+def client():
+    """TestClient over the real route: no fakes, create_session hits Supabase."""
+    app = FastAPI()
+    app.include_router(api.router)
+    return TestClient(app)

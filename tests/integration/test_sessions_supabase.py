@@ -5,7 +5,7 @@ from pathlib import Path
 
 import psycopg
 
-from quadra.sessions import QUADRANTS, create_session, get_client
+from quadra.sessions import QUADRANTS, get_client
 
 MIGRATION = Path(__file__).resolve().parents[2] / "supabase" / "migrations" / "0001_workspace.sql"
 
@@ -42,24 +42,37 @@ def _workspace_statuses(client, session_id):
     return [row["status"] for row in workspace.data]
 
 
-def _timed_create(client):
+def _post_session(client):
+    """POST /sessions; the elapsed time includes building the Supabase client."""
     started = time.perf_counter()
-    session = create_session("Integration Feature", client)
-    return session, (time.perf_counter() - started) * 1000
+    response = client.post("/sessions", json={"feature_name": "Integration Feature"})
+    return response, (time.perf_counter() - started) * 1000
 
 
-def test_create_session_within_latency_limit():
-    session, elapsed_ms = _timed_create(get_client())
+def test_create_session_within_latency_limit(client):
+    response, elapsed_ms = _post_session(client)
 
+    assert response.status_code == 201
     assert elapsed_ms < 2000
-    assert uuid.UUID(session.session_id).version == 4
+    assert uuid.UUID(response.json()["session_id"]).version == 4
 
 
-def test_create_session_persists_workspace_and_quadrants():
-    client = get_client()
-    session, _ = _timed_create(client)
-
-    assert _workspace_statuses(client, session.session_id) == ["open"]
-    canvas_ids = _canvas_ids(client, session.session_id)
+def _persisted_state(session_id):
+    """Read back what Supabase holds for the session: (statuses, quadrant names)."""
+    supabase = get_client()
+    canvas_ids = _canvas_ids(supabase, session_id)
     assert len(canvas_ids) == 1
-    assert _quadrant_names(client, canvas_ids[0]) == sorted(QUADRANTS)
+    return (
+        _workspace_statuses(supabase, session_id),
+        _quadrant_names(supabase, canvas_ids[0]),
+    )
+
+
+def test_create_session_persists_workspace_and_quadrants(client):
+    response, _ = _post_session(client)
+    body = response.json()
+
+    assert response.status_code == 201
+    assert (body["status"], body["link"]) == ("open", f"/sessions/{body['session_id']}")
+    assert _persisted_state(body["session_id"]) == (["open"], sorted(QUADRANTS))
+    assert body["canvas"]["quadrants"] == list(QUADRANTS)
