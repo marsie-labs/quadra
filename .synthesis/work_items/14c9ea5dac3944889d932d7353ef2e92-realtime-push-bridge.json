@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 5,
   "rejection_count": 0,
   "pbi_id": "realtime-push-bridge",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0001.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The required push-delivery test does not prove the <2000ms delivery bound: _observe_in_dom timestamps user.find against NiceGUI's server-side element tree, which render() updates before WebSocket delivery, while the separately recorded WebSocket emit is allowed up to 10 seconds and is not included in the latency assertion. Consequently, a delayed second-client update can pass, contrary to the Contract's requirement not to substitute callback-side receipt for client rendering.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
