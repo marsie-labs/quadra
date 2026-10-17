@@ -112,20 +112,24 @@ def _record_notifications(monkeypatch: pytest.MonkeyPatch, path: list[str]) -> N
 
 def _record_websocket_push(
     monkeypatch: pytest.MonkeyPatch, client_id: str, status: str, path: list[str]
-) -> asyncio.Event:
-    """Record the NiceGUI WebSocket update carrying `status` to one client's room."""
-    pushed = asyncio.Event()
+) -> list[float]:
+    """Record the NiceGUI WebSocket update carrying `status` to one client's room.
+
+    The returned list receives the clock reading taken when the socket emit to that
+    client completed, i.e. when the update left the server for the client.
+    """
+    delivered: list[float] = []
     original_emit = core.sio.emit
 
     async def recording_emit(event, data=None, *args, room=None, **kwargs):
         result = await original_emit(event, data, *args, room=room, **kwargs)
         if event == "update" and room == client_id and status in json.dumps(data, default=str):
             path.append("nicegui websocket update")
-            pushed.set()
+            delivered.append(time.perf_counter())
         return result
 
     monkeypatch.setattr(core.sio, "emit", recording_emit)
-    return pushed
+    return delivered
 
 
 def _mount_watch_page(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -180,14 +184,16 @@ async def test_push_delivery_without_polling(
         polling = _forbid_polling(monkeypatch)
         _record_notifications(monkeypatch, path)
         status = f"status-{uuid.uuid4()}"
-        pushed = _record_websocket_push(monkeypatch, client_b.id, status, path)
+        delivered = _record_websocket_push(monkeypatch, client_b.id, status, path)
 
         observed = asyncio.create_task(_observe_in_dom(user_b, f"workspaces UPDATE {status}"))
         started = (await _commit_status(session_id, status))[1]
-        await asyncio.wait_for(pushed.wait(), timeout=10)
         rendered_at = await asyncio.wait_for(observed, timeout=10)
+        await _next_change(delivered)
 
-        # Commit to the second simulated user's DOM, not merely to the server-side emit.
+        # The server-side element tree changes before the WebSocket carries the update, so
+        # the bound covers both: the update reached the client's socket and its DOM shows it.
+        _assert_within_limit(delivered[0] - started)
         _assert_within_limit(rendered_at - started)
         assert path == ["supabase realtime notification", "nicegui websocket update"]
         assert polling == []
