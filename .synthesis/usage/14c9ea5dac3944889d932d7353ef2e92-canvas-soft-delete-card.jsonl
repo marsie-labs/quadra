@@ -1,0 +1,1 @@
+{"at": "2026-10-17T20:19:26+00:00", "work_item_id": "14c9ea5dac3944889d932d7353ef2e92-canvas-soft-delete-card", "stage": "ASSEMBLE", "pbi_id": "canvas-soft-delete-card", "model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 14, "input_tokens": 481532, "output_tokens": 9172, "cache_read_tokens": 388607, "cache_write_tokens": 92895}
