@@ -10,5 +10,17 @@
     "quiz_questions": null,
     "quiz_answers": null,
     "quiz_justification": null
+  },
+  {
+    "artifact_id": "render-existing-session-canvas",
+    "stage": "REVIEW",
+    "passed": true,
+    "policy": "agent",
+    "approver": null,
+    "rejection_reason": null,
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null
   }
 ]
