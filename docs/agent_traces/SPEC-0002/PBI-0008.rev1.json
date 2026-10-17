@@ -1,0 +1,97 @@
+{
+  "version": "1.0.0",
+  "id": "4cce4f48-9f6f-45fc-85aa-fd3cc6cc901c",
+  "timestamp": "2026-10-17T21:11:28Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/canvas.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 67,
+              "end_line": 67,
+              "content_hash": "sha256:24e2f95f22c88dea29fe75b23f117b06df3f1815fba4924943929a35b93c4ee6"
+            },
+            {
+              "start_line": 148,
+              "end_line": 188,
+              "content_hash": "sha256:6fdcca284569d65602fad87431039672a22578e76fa11230663322e9e468fe1f"
+            },
+            {
+              "start_line": 359,
+              "end_line": 359,
+              "content_hash": "sha256:b554067521a6ff973bac64a6b3e7736da36f2e05cf96d97218f22af981d460cf"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/features/relocate_a_card_and_persist_ordering.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 9,
+              "content_hash": "sha256:3a4ecfb7d6a248d670df225b0fedc9cee195b509fa46ea29728481ff0805e63b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_canvas_relocate.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 189,
+              "content_hash": "sha256:543c3849ce7a438c2719c273502599c8cf4005df65c9355d46970fab92db4b57"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_relocate_a_card_and_persist_ordering.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 70,
+              "content_hash": "sha256:5b5391538d09cc9256537a58ddea35e7bfe1bc1dc33d52439080aabb1f545f39"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0008",
+    "rev": 1,
+    "base_revision": "f33a3a9e9fb3c3fc3a0df0dd9fc0294f2f4e616b"
+  }
+}
