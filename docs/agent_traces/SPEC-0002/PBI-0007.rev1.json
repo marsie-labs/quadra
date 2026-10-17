@@ -1,0 +1,97 @@
+{
+  "version": "1.0.0",
+  "id": "159580da-5885-4e26-846c-29ca29c3ccc4",
+  "timestamp": "2026-10-17T20:30:00Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/canvas.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 147,
+              "end_line": 183,
+              "content_hash": "sha256:ff70bbd2429580dddbba852c7a1a09448fe66c53842465782d3cac276945ca81"
+            },
+            {
+              "start_line": 289,
+              "end_line": 289,
+              "content_hash": "sha256:2425af2ed3127609ec6f3425c3a2e772e7e03b02e37e27e03bec744f5c48a909"
+            },
+            {
+              "start_line": 314,
+              "end_line": 316,
+              "content_hash": "sha256:ce52efc3ed19f3c81e459a39ed7c9151009ac076b98a7d4390843c82e347949a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/features/soft_delete_without_losing_the_database_record.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 8,
+              "content_hash": "sha256:04aa79eaf39ecf5c8ab18205361355c474570125b3bad249b20b0add3328e54e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_canvas_delete.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 124,
+              "content_hash": "sha256:6e359c93913d078e043018aec928611af69bb0a39abd5f17fff1cb84266549fe"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_soft_delete_without_losing_the_database_record.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 67,
+              "content_hash": "sha256:fad94bdffc479076aea90ed96cc659cf29590153c6ad838310d6f45fbeb2a14b"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0007",
+    "rev": 1,
+    "base_revision": "8c046e083a31f66d0ff8c36386decc999d971ce2"
+  }
+}
