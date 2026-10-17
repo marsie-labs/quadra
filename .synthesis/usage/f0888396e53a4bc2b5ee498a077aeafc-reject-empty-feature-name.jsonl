@@ -1,0 +1,1 @@
+{"at": "2026-10-17T02:28:36+00:00", "work_item_id": "f0888396e53a4bc2b5ee498a077aeafc-reject-empty-feature-name", "stage": "ASSEMBLE", "pbi_id": "reject-empty-feature-name", "model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 9, "input_tokens": 152837, "output_tokens": 3444, "cache_read_tokens": 129924, "cache_write_tokens": 22893}
