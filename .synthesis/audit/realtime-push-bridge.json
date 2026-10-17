@@ -52,5 +52,20 @@
     "quiz_answers": null,
     "quiz_justification": null,
     "failed_checks": null
+  },
+  {
+    "artifact_id": "realtime-push-bridge",
+    "stage": "REVIEW",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "adversarial-code-review",
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": {
+      "adversarial-code-review": ""
+    }
   }
 ]
