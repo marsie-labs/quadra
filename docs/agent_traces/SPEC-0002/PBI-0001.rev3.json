@@ -1,0 +1,58 @@
+{
+  "version": "1.0.0",
+  "id": "d172b952-7751-4ed6-94b7-b9ad2d8ca4ad",
+  "timestamp": "2026-10-17T15:13:38Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "tests/integration/test_realtime.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 115,
+              "end_line": 121,
+              "content_hash": "sha256:3e98755d06510514fa087173798c8df7ef8507284ed027d07c13a6db383b2ef8"
+            },
+            {
+              "start_line": 128,
+              "end_line": 128,
+              "content_hash": "sha256:d53ed957a6e6e88ed4ade88e5ec7a206c510b688db50ba01edfacaa87f16861d"
+            },
+            {
+              "start_line": 132,
+              "end_line": 132,
+              "content_hash": "sha256:9d6357bf47a572c32badd48ff9663425670e649df1c31952dfeec4c9da647efd"
+            },
+            {
+              "start_line": 187,
+              "end_line": 187,
+              "content_hash": "sha256:916d09efbc60aaa9534b70274ce348bb90bffa191cfd925c4eb58f68be2cb779"
+            },
+            {
+              "start_line": 192,
+              "end_line": 192,
+              "content_hash": "sha256:bd581993d96e3ca99eb093487945fa66ace7280dff6eaa4ae58889518a002c43"
+            },
+            {
+              "start_line": 194,
+              "end_line": 196,
+              "content_hash": "sha256:ad823ad7969bd7f0c38c889595a398be824fc6886078c7e923711c9b00dc188a"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0001",
+    "rev": 3,
+    "base_revision": "54cc98bf3ae764d9f0e32b8372081010f810de29"
+  }
+}
