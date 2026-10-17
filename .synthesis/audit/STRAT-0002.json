@@ -16,5 +16,23 @@
       "The architecture will need to shift to a separate WebSocket gateway for Realtime events."
     ],
     "quiz_justification": "missed: The project assumes the existing NiceGUI event loop can handle long-lived Supabase Realtime connections. What happens if this assumption proves incorrect, and why does this specific failure necessitate that secondary architectural shift?"
+  },
+  {
+    "artifact_id": "STRAT-0002",
+    "stage": "DEFINE",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "human-signoff",
+    "constitution_version": null,
+    "quiz_questions": [
+      "Why is the real-time event pipeline explicitly mandated to be built as a separate PBI before any card-based UI functionality is developed?",
+      "The project assumes the existing NiceGUI event loop can handle long-lived Supabase Realtime connections. What happens if this assumption proves incorrect, and why does this specific failure necessitate that secondary architectural shift?"
+    ],
+    "quiz_answers": [
+      "Prioritizing architectural stability over immediate UI feature richness.",
+      "if that assumption is wrong, we will need to change the architecture, and for example use web sockets since we need to garantee UI responsiveness."
+    ],
+    "quiz_justification": "every answer matched the artifact"
   }
 ]
