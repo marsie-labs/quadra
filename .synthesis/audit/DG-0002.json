@@ -10,5 +10,17 @@
     "quiz_questions": null,
     "quiz_answers": null,
     "quiz_justification": null
+  },
+  {
+    "artifact_id": "DG-0002",
+    "stage": "DISCOVER",
+    "passed": true,
+    "policy": "agent; human",
+    "approver": null,
+    "rejection_reason": null,
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null
   }
 ]
