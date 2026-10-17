@@ -76,6 +76,7 @@ class Canvas:
                     self._compose(position)
         self._quadrant_ids: list[str] = []
         self._cards: dict[str, Card] = {}
+        self._drafts: dict[str, str] = {}  # card id -> text in its open editor
         self._buffered: list[SessionChange] = []  # changes seen while the snapshot loads
         self._loading = True
         self._registration: asyncio.Future[None] | None = None
@@ -121,6 +122,44 @@ class Canvas:
             logger.exception("Card could not be added to session %s", self._session_id)
             ui.notify("Card could not be added", type="negative")
             return None
+
+    async def _save_edit(self, card_id: str) -> None:
+        """Replace the card's content with its draft and show the confirmed card.
+
+        Only the content is sent: authorship and creation time stay the card's own.
+        """
+        content = self._drafts.get(card_id, "")
+        if not content.strip():
+            ui.notify("Enter some text", type="warning")
+            return
+        try:
+            card = await asyncio.to_thread(cards.update_card, self._session_id, card_id, content)
+        except cards.CardError:
+            logger.exception("Card %s could not be updated", card_id)
+            ui.notify("Card could not be updated", type="negative")
+            return
+        self._drafts.pop(card_id, None)
+        # The push of this same update may have arrived already; stale ones are ignored.
+        affected = self._fold(asdict(card)) or {card.quadrant_id}
+        for quadrant_id in affected:
+            self._render(quadrant_id)
+
+    def _open_editor(self, card: Card) -> None:
+        self._drafts[card.id] = card.content
+        self._render(card.quadrant_id)
+
+    def _close_editor(self, card: Card) -> None:
+        self._drafts.pop(card.id, None)
+        self._render(card.quadrant_id)
+
+    def _editor(self, card: Card) -> None:
+        """The open editor of `card`, marked edit-content-ID and save-ID."""
+        draft = ui.input("Edit card", value=self._drafts[card.id])
+        draft.mark(f"edit-content-{card.id}")
+        draft.on_value_change(lambda event: self._drafts.__setitem__(card.id, event.value or ""))
+        draft.on("keydown.enter", lambda: self._save_edit(card.id))
+        ui.button("Save", on_click=lambda: self._save_edit(card.id)).mark(f"save-{card.id}")
+        ui.button("Cancel", on_click=lambda: self._close_editor(card)).mark(f"cancel-{card.id}")
 
     def _entered(self, composer: ui.input) -> tuple[str, str]:
         """The trimmed display name and the raw text currently typed."""
@@ -224,8 +263,16 @@ class Canvas:
         )
         with column:
             for card in in_quadrant:
-                with ui.card().tight().classes("p-2"):
-                    ui.label(card.content)
-                    ui.label(card.creator_display_name).classes("text-caption")
-                    created = _instant(card.created_at).strftime("%Y-%m-%d %H:%M:%S %Z")
-                    ui.badge(created, color="grey-7")
+                self._card_view(card)
+
+    def _card_view(self, card: Card) -> None:
+        """One card: its content or open editor, its creator and its creation time."""
+        with ui.card().tight().classes("p-2"):
+            if card.id in self._drafts:
+                self._editor(card)
+            else:
+                ui.label(card.content)
+                ui.button("Edit", on_click=lambda: self._open_editor(card)).mark(f"edit-{card.id}")
+            ui.label(card.creator_display_name).classes("text-caption")
+            created = _instant(card.created_at).strftime("%Y-%m-%d %H:%M:%S %Z")
+            ui.badge(created, color="grey-7")
