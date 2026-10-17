@@ -5,7 +5,8 @@ only once the subscription is ready, so a commit can never fall between the two.
 Notifications arriving while the snapshot loads are buffered and applied on top of it;
 cards are keyed by id, so a change seen both ways is shown exactly once.
 
-Card content and names are rendered with ui.label, i.e. as escaped plain text.
+Card content and names are rendered with ui.label, i.e. as escaped plain text. The
+display name a participant types is kept per connected view: it is not an identity.
 """
 
 import asyncio
@@ -65,17 +66,74 @@ class Canvas:
         self._session_id = session.session_id
         self._client: Client = ui.context.client
         self._columns: list[ui.column] = []
+        self._submit_buttons: list[ui.button] = []
+        self._display_name = ui.input("Your display name").mark("display-name")
         with ui.grid(columns=2).classes("w-full"):
-            for name in session.quadrants:
+            for position, name in enumerate(session.quadrants):
                 with ui.card().classes("min-h-48"):
                     ui.label(name).classes("text-h6")
                     self._columns.append(ui.column())
+                    self._compose(position)
         self._quadrant_ids: list[str] = []
         self._cards: dict[str, Card] = {}
         self._buffered: list[SessionChange] = []  # changes seen while the snapshot loads
         self._loading = True
         self._registration: asyncio.Future[None] | None = None
         self._stopped = False  # the client disconnected
+
+    def _compose(self, position: int) -> None:
+        """The card composer of quadrant `position`, marked content-N and submit-N.
+
+        Submitting stays off until the cards are loaded.
+        """
+        content = ui.input("New card").mark(f"content-{position}")
+        button = ui.button("Add card", on_click=lambda: self._submit(position, content))
+        button.mark(f"submit-{position}").disable()
+        self._submit_buttons.append(button)
+        content.on("keydown.enter", lambda: self._submit(position, content))
+
+    async def _submit(self, position: int, composer: ui.input) -> None:
+        """Insert the composed card at the end of the quadrant and show it once confirmed."""
+        name, content = self._entered(composer)
+        if not self._submittable(name, content):
+            ui.notify("Enter a display name and some text", type="warning")
+            return
+        card = await self._insert(self._quadrant_ids[position], content, name)
+        if card is None:
+            return
+        composer.value = ""
+        # The push of this same insert may have arrived already; cards are keyed by id.
+        for affected in self._fold(asdict(card)):
+            self._render(affected)
+
+    async def _insert(self, quadrant_id: str, content: str, name: str) -> Card | None:
+        """The confirmed card, or None (after showing an error) if it could not be added."""
+        try:
+            return await asyncio.to_thread(
+                cards.insert_card,
+                self._session_id,
+                quadrant_id,
+                self._next_index(quadrant_id),
+                content,
+                name,
+            )
+        except cards.CardError:
+            logger.exception("Card could not be added to session %s", self._session_id)
+            ui.notify("Card could not be added", type="negative")
+            return None
+
+    def _entered(self, composer: ui.input) -> tuple[str, str]:
+        """The trimmed display name and the raw text currently typed."""
+        return str(self._display_name.value or "").strip(), str(composer.value or "")
+
+    def _submittable(self, name: str, content: str) -> bool:
+        """True once the cards are loaded and neither the name nor the text is blank."""
+        return not self._loading and bool(name) and bool(content.strip())
+
+    def _next_index(self, quadrant_id: str) -> int:
+        """The index after the last shown card of the quadrant."""
+        indexes = (card.index for card in self._cards.values() if card.quadrant_id == quadrant_id)
+        return 1 + max(indexes, default=-1)
 
     async def start(self) -> None:
         """Register for pushes, then load the active cards and show them."""
@@ -90,9 +148,11 @@ class Canvas:
         self._cards = {card.id: card for card in snapshot}
         self._loading = False
         for change in self._buffered:
-            self._apply(change)
+            self._fold(change.record)
         self._buffered = []
         with self._client:
+            for button in self._submit_buttons:
+                button.enable()
             for quadrant_id in self._quadrant_ids:
                 self._render(quadrant_id)
 
@@ -137,13 +197,13 @@ class Canvas:
             self._buffered.append(change)
             return
         with self._client:
-            for quadrant_id in self._apply(change):
+            for quadrant_id in self._fold(change.record):
                 self._render(quadrant_id)
 
-    def _apply(self, change: SessionChange) -> set[str]:
-        """Fold one card change into the cards; return the quadrants it affects."""
-        current = self._cards.get(change.record.get("id", ""))
-        card = _merged(current, change.record)
+    def _fold(self, record: dict) -> set[str]:
+        """Fold one card record into the cards; return the quadrants it affects."""
+        current = self._cards.get(record.get("id", ""))
+        card = _merged(current, record)
         if card is None:
             return set()
         if card.deleted_at is None:
@@ -167,3 +227,5 @@ class Canvas:
                 with ui.card().tight().classes("p-2"):
                     ui.label(card.content)
                     ui.label(card.creator_display_name).classes("text-caption")
+                    created = _instant(card.created_at).strftime("%Y-%m-%d %H:%M:%S %Z")
+                    ui.badge(created, color="grey-7")
