@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 5,
   "rejection_count": 0,
   "pbi_id": "create-session-endpoint",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0001/PBI-0001.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The claimed success scenario does not verify its Supabase requirements: tests/step_defs/test_create_session_success.py checks SQL text instead of initializing the schema and asserts persistence against FakeSupabase.rows, while the real integration tests exercise only the service directly. The <2000ms test also starts timing after get_client(), excluding client construction that every actual POST performs, so it does not establish the required creation latency.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
