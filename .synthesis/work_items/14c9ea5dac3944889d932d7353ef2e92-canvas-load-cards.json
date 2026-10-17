@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "canvas-load-cards",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0004.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: Canvas._register_and_load installs its disconnect handler only after awaiting realtime.register_view, leaving a disconnect during subscription readiness unhandled; registration can subsequently finish with no connected view and no unregister call. This violates the Contract's requirement to release subscriptions when no views need them; install cleanup before awaiting registration and coordinate it with registration completion.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
