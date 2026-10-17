@@ -1,0 +1,74 @@
+{
+  "version": "1.0.0",
+  "id": "92912e62-0f85-4878-bb69-47d90df3dffd",
+  "timestamp": "2026-10-17T02:29:03Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "tests/features/create_session_validation.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 8,
+              "content_hash": "sha256:5ac0f7ccc3100122f245e973bb4b4bd1180e7a70b7dc38704cfaa78f9809a9c4"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_sessions_supabase.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 7,
+              "end_line": 8,
+              "content_hash": "sha256:38ce5a97252828451479f74a800d2c0e027fa84db19a203c3c5cf080fec5c88e"
+            },
+            {
+              "start_line": 81,
+              "end_line": 101,
+              "content_hash": "sha256:e89c9e5dc20d2244ce87201afece2208d728e3b343abdd02712b8a2f9225be5e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_create_session_validation.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 73,
+              "content_hash": "sha256:88c8cb2c41f9f515fe181d26622401c19d8669543f43c58ff8e0532e293912b0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0001/PBI-0002",
+    "rev": 1,
+    "base_revision": "8fae868113ec5ea22cddb55b82034c6fbb4ded94"
+  }
+}
