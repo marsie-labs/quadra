@@ -1,0 +1,174 @@
+{
+  "version": "1.0.0",
+  "id": "7bb7904f-e58a-4253-88b4-85c91152c2f4",
+  "timestamp": "2026-10-17T01:52:47Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "tests/integration/conftest.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 7,
+              "end_line": 10,
+              "content_hash": "sha256:e3e1f7e114f87ee25b248244d2d2bc9271d5dcf64f3a4fa8f7e971f945ae5f2e"
+            },
+            {
+              "start_line": 27,
+              "end_line": 34,
+              "content_hash": "sha256:7662d5dc38357f28846ae6beea89d65a87830ec465230c4ece8af930157e27ea"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_sessions_supabase.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 8,
+              "end_line": 8,
+              "content_hash": "sha256:e6d35ee08adf7d8e6ec6cea909db613d04256d4eb4e21a07feaa5f10975f4d4e"
+            },
+            {
+              "start_line": 45,
+              "end_line": 46,
+              "content_hash": "sha256:06b1f2a30a7026efcab5f14e1149cfce7833d06950d402a923382c56059ab4a0"
+            },
+            {
+              "start_line": 48,
+              "end_line": 49,
+              "content_hash": "sha256:a8e6a24bf16fe700c97bbcb3b4ff98e2131397022290b29b1373ac5103f4c20e"
+            },
+            {
+              "start_line": 52,
+              "end_line": 53,
+              "content_hash": "sha256:bac737cfebeae685944b1ae970fa2c992e35fd6cdec90324d804a68153860869"
+            },
+            {
+              "start_line": 55,
+              "end_line": 55,
+              "content_hash": "sha256:cdf0d5070766a8fe34ee9b85c63878f4ce5477d972b636605f4ec326871c98d4"
+            },
+            {
+              "start_line": 57,
+              "end_line": 57,
+              "content_hash": "sha256:b27e853aaba3fd5acd29a30ae9e70ecca40c9884a5a1c740a9bb141930a9a04d"
+            },
+            {
+              "start_line": 60,
+              "end_line": 63,
+              "content_hash": "sha256:8370d08c660a6b62f206229d79b07aa12127a261615c00a607bb5565e5ef2556"
+            },
+            {
+              "start_line": 65,
+              "end_line": 78,
+              "content_hash": "sha256:42c500caaaf2b326d047f28c0f7b6c0618ab41841c1695af33198b922a4c6bfd"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_create_session_success.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 1,
+              "content_hash": "sha256:de2abade832c8e350a1bdc98cfcdb1e202ac4749c5fc51a4a970d41736b6df5c"
+            },
+            {
+              "start_line": 5,
+              "end_line": 5,
+              "content_hash": "sha256:7b44f9ede59af705f8b91ec668902e01644c2bea8a81375d358dbe5d9f66d577"
+            },
+            {
+              "start_line": 7,
+              "end_line": 7,
+              "content_hash": "sha256:bd3a341884123e5769bdbcc17155e60ab72d64662803431196ab03a731f7126e"
+            },
+            {
+              "start_line": 12,
+              "end_line": 13,
+              "content_hash": "sha256:23ddb26ab59e84a4dbdae748974e573053f40345c8e557ef39ec7ba0ae3e0cb6"
+            },
+            {
+              "start_line": 16,
+              "end_line": 16,
+              "content_hash": "sha256:6060247f053b95b1a19a5fe3902c1fb29d2d632cb3c58a0173062ca6f38c17fa"
+            },
+            {
+              "start_line": 26,
+              "end_line": 26,
+              "content_hash": "sha256:d38b24898b157830d28a119d79116b9f78ee518c736cebf4899648925968c712"
+            },
+            {
+              "start_line": 31,
+              "end_line": 41,
+              "content_hash": "sha256:10b5e1ebf983207e7f3867f9fddfd441d3a03e7014420ff2096aa35866f36830"
+            },
+            {
+              "start_line": 45,
+              "end_line": 50,
+              "content_hash": "sha256:635d89b9facbe4841d7a75ca33f5f5871f7ae3106f536e94f9b7fbe4b9b8949b"
+            },
+            {
+              "start_line": 59,
+              "end_line": 59,
+              "content_hash": "sha256:790340165980f191cb52fd5f557d6dd09e1d6f4e0735ad8574883927b091b10d"
+            },
+            {
+              "start_line": 61,
+              "end_line": 78,
+              "content_hash": "sha256:e48720e2fc007f8b6955c78fb8c44cf0c767b21d71b3fa66f7762075ef75a90b"
+            },
+            {
+              "start_line": 85,
+              "end_line": 85,
+              "content_hash": "sha256:eb98ed86e2f115a0e3967fc8c8467d3e70c6cccc8ddd7f068a7972bd7fb2c4dd"
+            },
+            {
+              "start_line": 87,
+              "end_line": 87,
+              "content_hash": "sha256:0609bf3b4fb47f690b756e3b5b9ec6ad36493073e93391a91d4c97edc70094de"
+            },
+            {
+              "start_line": 94,
+              "end_line": 94,
+              "content_hash": "sha256:36ae1436d2ce8ec89f86ae0fff7a2c4535fa54ff913197faa5734052116c5f70"
+            },
+            {
+              "start_line": 100,
+              "end_line": 100,
+              "content_hash": "sha256:3c15641fc924bf219a5961acaab72bb8609307265098c2841fe16c3e6007894e"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0001/PBI-0001",
+    "rev": 2,
+    "base_revision": "6420ac399abb239a87df1e467b5660ed00817563"
+  }
+}
