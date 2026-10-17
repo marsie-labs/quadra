@@ -144,6 +144,43 @@ class Canvas:
         for quadrant_id in affected:
             self._render(quadrant_id)
 
+    def _ask_delete(self, card: Card) -> None:
+        """Open a confirmation dialog, marked confirm-delete-ID and cancel-delete-ID.
+
+        The dialog belongs to the page, not to the card, so a re-render of the card's
+        quadrant does not discard it. Its text names no card content.
+        """
+        with self._client, ui.dialog() as dialog, ui.card():
+            ui.label("Delete this card?")
+            confirm = ui.button("Delete", on_click=lambda: self._confirm_delete(card.id, dialog))
+            confirm.mark(f"confirm-delete-{card.id}")
+            ui.button("Cancel", on_click=lambda: self._dismiss(dialog)).mark(
+                f"cancel-delete-{card.id}"
+            )
+        dialog.open()
+
+    @staticmethod
+    def _dismiss(dialog: ui.dialog) -> None:
+        dialog.close()
+        dialog.delete()
+
+    async def _confirm_delete(self, card_id: str, dialog: ui.dialog) -> None:
+        """Soft-delete the card; every connected canvas, this one included, drops it.
+
+        The row stays in the database. The removal reaches the other canvases through
+        the Realtime push of the committed update.
+        """
+        self._dismiss(dialog)
+        try:
+            card = await asyncio.to_thread(cards.soft_delete_card, self._session_id, card_id)
+        except cards.CardError:
+            logger.exception("Card %s could not be deleted", card_id)
+            ui.notify("Card could not be deleted", type="negative")
+            return
+        # The push of this same deletion may have arrived already; the fold is idempotent.
+        for quadrant_id in self._fold(asdict(card)):
+            self._render(quadrant_id)
+
     def _open_editor(self, card: Card) -> None:
         self._drafts[card.id] = card.content
         self._render(card.quadrant_id)
@@ -249,6 +286,7 @@ class Canvas:
             self._cards[card.id] = card
         else:
             self._cards.pop(card.id, None)
+            self._drafts.pop(card.id, None)
         return {card.quadrant_id} | ({current.quadrant_id} if current else set())
 
     def _render(self, quadrant_id: str) -> None:
@@ -273,6 +311,9 @@ class Canvas:
             else:
                 ui.label(card.content)
                 ui.button("Edit", on_click=lambda: self._open_editor(card)).mark(f"edit-{card.id}")
+                ui.button("Delete", on_click=lambda: self._ask_delete(card)).mark(
+                    f"delete-{card.id}"
+                )
             ui.label(card.creator_display_name).classes("text-caption")
             created = _instant(card.created_at).strftime("%Y-%m-%d %H:%M:%S %Z")
             ui.badge(created, color="grey-7")
