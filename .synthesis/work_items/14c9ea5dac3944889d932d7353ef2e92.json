@@ -36,17 +36,117 @@
   "pbi_id": null,
   "child_ids": [],
   "artifact_paths": {
-    "DISCOVER": "docs/discovery/DG-0002.md"
+    "DISCOVER": "docs/discovery/DG-0002.md",
+    "DEFINE": "docs/strategy/STRAT-0002.md"
   },
-  "pending_artifacts": {},
+  "pending_artifacts": {
+    "DEFINE": {
+      "core_strategy": "Enable multi-user collaboration by implementing an asynchronous event-driven bridge between database mutations and client UI updates, alongside a card-centric persistence model that tracks user authorship and temporal data.",
+      "names_mechanism": false,
+      "rejected_alternatives": [
+        {
+          "direction": "Polling the database at fixed intervals for updates.",
+          "tradeoff": "Violates the core latency requirement and creates unnecessary backend load compared to event-driven push."
+        },
+        {
+          "direction": "Client-side card state management with heavy local persistence.",
+          "tradeoff": "Increases risk of state divergence between participants; complicates the synchronization logic."
+        }
+      ],
+      "dependencies": [
+        {
+          "description": "Supabase Realtime API and supabase-py library support for async event subscriptions.",
+          "owner": "Supabase/Platform Engineering",
+          "status": "Available"
+        }
+      ],
+      "assumptions": [
+        {
+          "description": "The existing NiceGUI event loop can maintain a long-lived connection to Supabase Realtime without impacting UI responsiveness.",
+          "validator": "Lead Developer",
+          "how_checked": "Verification during integration testing of the Realtime service implementation.",
+          "if_false": "The architecture will need to shift to a separate WebSocket gateway for Realtime events."
+        }
+      ],
+      "risks": [
+        {
+          "description": "High frequency of rapid updates during intense collaboration could saturate the event bus.",
+          "likelihood": "Medium",
+          "impact": "Latency spikes exceeding the 2000ms target.",
+          "mitigation": "Implement debouncing on client-side card movements and batching of updates where appropriate."
+        }
+      ],
+      "thesis": "We will bridge the collaborative gap by building a real-time event pipeline as the foundational service for all card-based interactions.",
+      "from_problem_graph": "",
+      "goals": [
+        {
+          "description": "Implement a real-time event pipeline ensuring all clients reflect state changes within the 2000ms threshold.",
+          "why": "Required for multi-user, collaborative decision-making.",
+          "success_metric": "End-to-end latency from database mutation to client rendering < 2000ms.",
+          "owner": "Engineering"
+        },
+        {
+          "description": "Enable full CRUD operations for cards within the quadrant UI.",
+          "why": "Participants need to interact with the canvas to make decisions.",
+          "success_metric": "100% of inserted/moved cards correctly reflected across all active sessions.",
+          "owner": "Engineering"
+        }
+      ],
+      "success_criteria": [
+        {
+          "criterion": "Latency from server mutation to client update.",
+          "measurement": "End-to-end round-trip monitoring.",
+          "target": "< 2000ms.",
+          "baseline": "Current latency (N/A, feature not implemented).",
+          "cadence": "Per release."
+        }
+      ],
+      "non_goals": [
+        {
+          "description": "Real-time cursor tracking (mouse position).",
+          "tradeoff": "Adds complexity and network load without immediate benefit to decision alignment."
+        },
+        {
+          "description": "User authentication/accounts.",
+          "tradeoff": "We use anonymous session-based display names to maintain ephemeral, low-friction access."
+        }
+      ],
+      "in_scope": [
+        "Realtime synchronization service",
+        "Card persistence schema (quadrant, index, display name, timestamp)",
+        "Card CRUD UI operations",
+        "NiceGUI event handling for collaborative updates"
+      ],
+      "out_of_scope": [
+        "Exporting session state to external formats.",
+        "Complex card formatting (e.g., Markdown/Rich text)."
+      ],
+      "walkthrough": [
+        {
+          "name": "Multi-user card movement",
+          "today": [
+            "User A sees empty quadrants.",
+            "User B sees empty quadrants."
+          ],
+          "with_strategy": [
+            "User A enters 'Alice' and creates a card in Q1.",
+            "User B sees the new card appear in Q1 instantly with 'Alice' label and current timestamp.",
+            "User A moves the card to Q2.",
+            "User B sees the card move to Q2 instantly."
+          ]
+        }
+      ],
+      "path": "docs/strategy/STRAT-0002.md"
+    }
+  },
   "rework_notes": null,
   "trunk_merge_pending": false,
-  "clarification_questions": {
-    "DEFINE": [
-      "What are the specific requirements for author identification and timestamping for cards beyond the basic relational fields?"
-    ]
+  "clarification_questions": {},
+  "clarifications": {
+    "DEFINE": {
+      "What are the specific requirements for author identification and timestamping for cards beyond the basic relational fields?": "I would like a display name typed when opening the link, and just timestamp."
+    }
   },
-  "clarifications": {},
   "clarification_rounds": {
     "DEFINE": 1
   },
