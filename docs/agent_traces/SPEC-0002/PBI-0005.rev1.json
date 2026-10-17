@@ -1,0 +1,132 @@
+{
+  "version": "1.0.0",
+  "id": "b94a7897-5217-4b16-85b4-0e939d90b96a",
+  "timestamp": "2026-10-17T19:19:49Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/canvas.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 8,
+              "end_line": 9,
+              "content_hash": "sha256:d7ab12aa18c97cf36eb45749dd423ff9764ac5b3d38851e33c4f8a2799a53795"
+            },
+            {
+              "start_line": 69,
+              "end_line": 70,
+              "content_hash": "sha256:feb4f29598c991d6e3c6d8c66d6bd1dfe016e7724ec9c3c606e884b8e704e36b"
+            },
+            {
+              "start_line": 72,
+              "end_line": 72,
+              "content_hash": "sha256:d47e5e16f373fdf089d77d0faf8c86ba847b50d4f160fc7633430f47761f0d4d"
+            },
+            {
+              "start_line": 76,
+              "end_line": 76,
+              "content_hash": "sha256:e0269939abf5873795bef135764d4125667609bdfc9a6c082121348b1867cf92"
+            },
+            {
+              "start_line": 84,
+              "end_line": 137,
+              "content_hash": "sha256:fefd09e92d06a7ae4754381d1cd63391b49a2ae9d19b106af2ee39844c711245"
+            },
+            {
+              "start_line": 151,
+              "end_line": 151,
+              "content_hash": "sha256:2f44fe7d00876379b567891c672159d38ddce7cedbc9b10efc8212c485851dab"
+            },
+            {
+              "start_line": 154,
+              "end_line": 155,
+              "content_hash": "sha256:e1b272bba3c87cd1a2b6ad9df5aa4c0b69c9c3ee2482b566d7d561391a16f4db"
+            },
+            {
+              "start_line": 200,
+              "end_line": 200,
+              "content_hash": "sha256:90ff1b4616d43d702d171eceeebce1bc54e360b8ef98054209b647f2ad67f44d"
+            },
+            {
+              "start_line": 203,
+              "end_line": 206,
+              "content_hash": "sha256:b9335bcab8bb652c0954fbaebfc7f5093eecaad624a76c13884278fa97424832"
+            },
+            {
+              "start_line": 230,
+              "end_line": 231,
+              "content_hash": "sha256:045d24d6fa2974ea37c79cb06b176d7070a51be9458c0889e927699dea8ef4ba"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/features/insert_a_card_with_anonymous_authorship.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 11,
+              "content_hash": "sha256:44c4347473ef337c4ca7a09d72d8989003a9e40b49f6b384c1e19157ae8c82d4"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_canvas_insert.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 197,
+              "content_hash": "sha256:bfa0c526b3a49a60654e8eb3de65e4ae37facb44128bd535cb3557a7c7e689f7"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_insert_a_card_with_anonymous_authorship.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 79,
+              "content_hash": "sha256:2109a4f02c89396264cc54e0b5133c0b46b1c95c3b566e260dee1613e76b3922"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0005",
+    "rev": 1,
+    "base_revision": "b0fb7793d0008a14441d6320d935e245ee337d56"
+  }
+}
