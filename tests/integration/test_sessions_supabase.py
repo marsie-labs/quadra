@@ -4,6 +4,8 @@ import uuid
 from pathlib import Path
 
 import psycopg
+import pytest
+from postgrest.types import CountMethod
 
 from quadra.sessions import QUADRANTS, get_client
 
@@ -76,3 +78,24 @@ def test_create_session_persists_workspace_and_quadrants(client):
     assert (body["status"], body["link"]) == ("open", f"/sessions/{body['session_id']}")
     assert _persisted_state(body["session_id"]) == (["open"], sorted(QUADRANTS))
     assert body["canvas"]["quadrants"] == list(QUADRANTS)
+
+
+def _record_counts():
+    """Row counts of the workspace, canvas and quadrant tables in Supabase."""
+    supabase = get_client()
+    return {
+        table: supabase.table(table).select("id", count=CountMethod.exact).execute().count
+        for table in ("workspaces", "canvases", "quadrants")
+    }
+
+
+@pytest.mark.parametrize(
+    "body", [{"feature_name": ""}, {}], ids=["empty feature_name", "missing feature_name"]
+)
+def test_create_session_validation_writes_nothing(client, body):
+    before = _record_counts()
+
+    response = client.post("/sessions", json=body)
+
+    assert response.status_code == 422
+    assert _record_counts() == before
