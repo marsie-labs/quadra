@@ -11,7 +11,8 @@ display name a participant types is kept per connected view: it is not an identi
 
 import asyncio
 import logging
-from dataclasses import asdict, fields
+import uuid
+from dataclasses import asdict, dataclass, fields
 from datetime import datetime
 
 from nicegui import Client, ui
@@ -24,6 +25,16 @@ from quadra.sessions import Session, get_client
 logger = logging.getLogger(__name__)
 
 _CARD_FIELDS = frozenset(field.name for field in fields(Card))
+
+
+@dataclass(frozen=True)
+class _PendingCard:
+    """A card whose insert request is unresolved; it lives only in this view's memory."""
+
+    id: str
+    quadrant_id: str
+    content: str
+    creator_display_name: str
 
 
 def _load_quadrant_ids(session_id: str) -> list[str]:
@@ -77,6 +88,7 @@ class Canvas:
                     self._compose(position)
         self._quadrant_ids: list[str] = []
         self._cards: dict[str, Card] = {}
+        self._pending: dict[str, _PendingCard] = {}  # card id -> insert awaiting confirmation
         self._drafts: dict[str, str] = {}  # card id -> text in its open editor
         self._buffered: list[SessionChange] = []  # changes seen while the snapshot loads
         self._loading = True
@@ -95,29 +107,41 @@ class Canvas:
         content.on("keydown.enter", lambda: self._submit(position, content))
 
     async def _submit(self, position: int, composer: ui.input) -> None:
-        """Insert the composed card at the end of the quadrant and show it once confirmed."""
+        """Insert the composed card at the end of the quadrant.
+
+        The card shows as pending at once, under the id the insert will use, and is
+        replaced by the confirmed card.
+        """
         name, content = self._entered(composer)
         if not self._submittable(name, content):
             ui.notify("Enter a display name and some text", type="warning")
             return
-        card = await self._insert(self._quadrant_ids[position], content, name)
+        quadrant_id = self._quadrant_ids[position]
+        pending = _PendingCard(str(uuid.uuid4()), quadrant_id, content, name)
+        index = self._next_index(quadrant_id)
+        self._pending[pending.id] = pending
+        self._render(quadrant_id)
+        card = await self._insert(pending, index)
+        self._pending.pop(pending.id, None)
         if card is None:
+            self._render(quadrant_id)
             return
         composer.value = ""
         # The push of this same insert may have arrived already; cards are keyed by id.
-        for affected in self._fold(asdict(card)):
+        for affected in self._fold(asdict(card)) | {quadrant_id}:
             self._render(affected)
 
-    async def _insert(self, quadrant_id: str, content: str, name: str) -> Card | None:
+    async def _insert(self, pending: _PendingCard, index: int) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be added."""
         try:
             return await asyncio.to_thread(
                 cards.insert_card,
                 self._session_id,
-                quadrant_id,
-                self._next_index(quadrant_id),
-                content,
-                name,
+                pending.quadrant_id,
+                index,
+                pending.content,
+                pending.creator_display_name,
+                card_id=pending.id,
             )
         except cards.CardError:
             logger.exception("Card could not be added to session %s", self._session_id)
@@ -337,13 +361,31 @@ class Canvas:
             return
         column = self._columns[self._quadrant_ids.index(quadrant_id)]
         column.clear()
-        in_quadrant = sorted(
-            (card for card in self._cards.values() if card.quadrant_id == quadrant_id),
-            key=lambda card: (card.index, card.id),
-        )
         with column:
-            for card in in_quadrant:
+            for card in self._shown(quadrant_id):
                 self._card_view(card)
+            for pending in self._unconfirmed(quadrant_id):
+                self._pending_view(pending)
+
+    def _shown(self, quadrant_id: str) -> list[Card]:
+        """The quadrant's cards by index, then card id."""
+        in_quadrant = (card for card in self._cards.values() if card.quadrant_id == quadrant_id)
+        return sorted(in_quadrant, key=lambda card: (card.index, card.id))
+
+    def _unconfirmed(self, quadrant_id: str) -> list[_PendingCard]:
+        """Pending cards of the quadrant; a push may have confirmed one before its insert returned."""
+        return [
+            pending
+            for pending in self._pending.values()
+            if pending.quadrant_id == quadrant_id and pending.id not in self._cards
+        ]
+
+    def _pending_view(self, pending: _PendingCard) -> None:
+        """An unconfirmed card, dimmed and labelled, marked pending-ID."""
+        with ui.card().tight().classes("p-2 opacity-50").mark(f"pending-{pending.id}"):
+            ui.label(pending.content)
+            ui.label(pending.creator_display_name).classes("text-caption")
+            ui.label("Pending").classes("text-caption text-orange")
 
     def _card_view(self, card: Card) -> None:
         """One card: its content or open editor, its creator and its creation time."""
