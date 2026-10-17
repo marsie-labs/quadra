@@ -64,6 +64,7 @@ class Canvas:
 
     def __init__(self, session: Session) -> None:
         self._session_id = session.session_id
+        self._quadrant_names = dict(enumerate(session.quadrants))
         self._client: Client = ui.context.client
         self._columns: list[ui.column] = []
         self._submit_buttons: list[ui.button] = []
@@ -143,6 +144,47 @@ class Canvas:
         affected = self._fold(asdict(card)) or {card.quadrant_id}
         for quadrant_id in affected:
             self._render(quadrant_id)
+
+    async def _move(self, card_id: str, position: int | None, index: float | None) -> None:
+        """Move the card to quadrant `position` at `index` and show the confirmed placement.
+
+        Only the placement is sent: authorship and creation time stay the card's own.
+        """
+        if position not in self._quadrant_names or index is None:
+            ui.notify("Choose a quadrant and an index", type="warning")
+            return
+        card = await self._relocate(card_id, self._quadrant_ids[position], int(index))
+        if card is None:
+            return
+        self._show_confirmed(card)
+
+    def _show_confirmed(self, card: Card) -> None:
+        """Show a card the database confirmed, wherever the fold places it."""
+        # The push of this same change may have arrived already; stale ones are ignored.
+        affected = self._fold(asdict(card)) or {card.quadrant_id}
+        for quadrant_id in affected:
+            self._render(quadrant_id)
+
+    async def _relocate(self, card_id: str, quadrant_id: str, index: int) -> Card | None:
+        """The confirmed card, or None (after showing an error) if it could not be moved."""
+        try:
+            return await asyncio.to_thread(
+                cards.relocate_card, self._session_id, card_id, quadrant_id, index
+            )
+        except cards.CardError:
+            logger.exception("Card %s could not be moved", card_id)
+            ui.notify("Card could not be moved", type="negative")
+            return None
+
+    def _mover(self, card: Card) -> None:
+        """Controls to move `card`, marked move-quadrant-ID, move-index-ID and move-ID."""
+        quadrant = ui.select(self._quadrant_names, label="Move to")
+        quadrant.mark(f"move-quadrant-{card.id}")
+        index = ui.number("At index", value=card.index, precision=0, min=0)
+        index.mark(f"move-index-{card.id}")
+        ui.button(
+            "Move", on_click=lambda: self._move(card.id, quadrant.value, index.value)
+        ).mark(f"move-{card.id}")
 
     def _ask_delete(self, card: Card) -> None:
         """Open a confirmation dialog, marked confirm-delete-ID and cancel-delete-ID.
@@ -314,6 +356,7 @@ class Canvas:
                 ui.button("Delete", on_click=lambda: self._ask_delete(card)).mark(
                     f"delete-{card.id}"
                 )
+                self._mover(card)
             ui.label(card.creator_display_name).classes("text-caption")
             created = _instant(card.created_at).strftime("%Y-%m-%d %H:%M:%S %Z")
             ui.badge(created, color="grey-7")
