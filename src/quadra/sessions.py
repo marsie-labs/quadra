@@ -58,3 +58,30 @@ def create_session(feature_name: str, client: Client | None = None) -> Session:
         status="open",
         quadrants=QUADRANTS,
     )
+
+
+def get_session(session_id: str, client: Client | None = None) -> Session | None:
+    """Load a session with its quadrants in canvas order; None when it does not exist."""
+    client = client or get_client()
+    rows = (
+        client.table("workspaces")
+        .select("id, feature_name, status, canvases(quadrants(name, position))")
+        .eq("id", session_id)
+        .execute()
+        .data
+    )
+    return _to_session(rows[0]) if rows else None
+
+
+def _to_session(workspace: dict) -> Session:
+    """Map a workspace row with nested canvases/quadrants to a Session."""
+    quadrants = sorted(
+        (q for canvas in workspace["canvases"] for q in canvas["quadrants"]),
+        key=lambda quadrant: quadrant["position"],
+    )
+    return Session(
+        session_id=workspace["id"],
+        feature_name=workspace["feature_name"],
+        status=workspace["status"],
+        quadrants=tuple(q["name"] for q in quadrants),
+    )
