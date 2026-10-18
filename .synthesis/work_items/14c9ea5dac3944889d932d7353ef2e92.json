@@ -56,7 +56,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. In src/quadra/canvas.py, _fold handles deletion by rendering only the record's and current card's quadrants, omitting any optimistic movement target in _moving. If another participant deletes a card while its relocation request is still unresolved and uncommitted, the pending card remains rendered in the target quadrant until that request settles, contrary to the Contract's authoritative soft-deletion semantics. The Definition of Done requires a soft-deleted card to disappear from connected canvases after confirmation. _fold neither clears the pending movement nor invalidates its target quadrant, so a confirmed deletion can leave a visible pending card on the initiating canvas. This is a code-level reconciliation gap: the Contract already clearly requires confirmed soft-deletions to remove cards from connected canvases and Supabase to remain authoritative. An integration PBI should reconcile pending movements and rerender their affected quadrants when deletion arrives; no Contract amendment is needed.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {
