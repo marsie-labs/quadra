@@ -1,0 +1,86 @@
+{
+  "version": "1.0.0",
+  "id": "7f8e7da1-bcad-4d05-9368-96d62ab21d7e",
+  "timestamp": "2026-10-18T02:59:47Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/canvas.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 71,
+              "end_line": 77,
+              "content_hash": "sha256:2a30a3b625d32b9b3220851da5a685dd1baf674467861163fa78a6c2108ede06"
+            },
+            {
+              "start_line": 84,
+              "end_line": 89,
+              "content_hash": "sha256:03bb4f44975f168c6755fb6576dd46abdcd9903e4f18ec20bf49b3385e60bd02"
+            },
+            {
+              "start_line": 92,
+              "end_line": 97,
+              "content_hash": "sha256:43e2217f3f7247ca2e1aeee25659d6773e7002eac2001870bbe283655c5651d0"
+            },
+            {
+              "start_line": 118,
+              "end_line": 120,
+              "content_hash": "sha256:0719dd3ae4fa99a7d038ed0f1a0f20c3a0987aaf07c9c39d922248d2b9e0eb12"
+            },
+            {
+              "start_line": 404,
+              "end_line": 404,
+              "content_hash": "sha256:4c30591c9931048e0ebaa3c84e297a807f33fa2e16c1fdad6efec7847418cac2"
+            },
+            {
+              "start_line": 412,
+              "end_line": 413,
+              "content_hash": "sha256:a8a28caff63d4c61b9649b6afd1c568ae61c0bfcdc1efe556d04c6c95cf93515"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_canvas_delete.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 3,
+              "end_line": 3,
+              "content_hash": "sha256:90781f3efdcb4ec0fcc56cd2214ffbf3333758a8b7d36c672a661660246717df"
+            },
+            {
+              "start_line": 12,
+              "end_line": 12,
+              "content_hash": "sha256:0430c2e35379b5af40b67120928211c31acea4d12ceabac3c693f5297e10d694"
+            },
+            {
+              "start_line": 126,
+              "end_line": 274,
+              "content_hash": "sha256:9111e86539d876d1403678af48744ef9f53303e310267c0d2ce8a003011f465b"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0013",
+    "rev": 1,
+    "base_revision": "706d27b71ead1f6ae04d1a41ea876dd330a18896"
+  }
+}
