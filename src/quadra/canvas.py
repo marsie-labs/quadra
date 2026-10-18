@@ -404,15 +404,21 @@ class Canvas:
         card = _merged(current, record, self._deleted.get(record.get("id", "")))
         if card is None:
             return set()
+        affected = {card.quadrant_id} | ({current.quadrant_id} if current else set())
         if card.deleted_at is None:
             self._cards[card.id] = card
         else:
             self._cards.pop(card.id, None)
             self._drafts.pop(card.id, None)
             self._pending.pop(card.id, None)  # its insert response, if any, is now moot
+            # The confirmed deletion wins over an unresolved optimistic move, whose
+            # target quadrant shows the card too.
+            move = self._moving.pop(card.id, None)
+            if move is not None:
+                affected |= {move.quadrant_id, move.origin_quadrant_id}
             # Never older than a version retained before: older records are stale.
             self._deleted[card.id] = _deletion_version(card)
-        return {card.quadrant_id} | ({current.quadrant_id} if current else set())
+        return affected
 
     def _render(self, quadrant_id: str) -> None:
         """Rebuild one quadrant's cards by index, then card id."""
