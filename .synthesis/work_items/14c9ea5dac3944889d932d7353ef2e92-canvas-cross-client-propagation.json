@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "canvas-cross-client-propagation",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0012.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The diff adds propagation and push-first reconciliation tests, but contains no production canvas changes demonstrating the PBI's required Realtime callback handling or pending-to-confirmed reconciliation by card id. The tests assume that behavior in the existing Canvas; without its implementation or supplied execution results, this diff does not establish the scoped propagation scenario.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
