@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 7,
   "rejection_count": 0,
   "pbi_id": "canvas-cross-client-propagation",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0012.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Integration rejected the previous attempt: the PBI's Gherkin scenarios did not all pass when run.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
