@@ -57,7 +57,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done, end-to-end) and rerouted to PBI_PLANNING. In src/quadra/canvas.py, a newer Realtime relocation to Q3 received while an older movement to Q2 is awaiting its response is stored in _cards but rendered under the _moving overlay in Q2. When the older response returns, _move clears that overlay, but _show_confirmed rejects the stale response and rerenders only Q2, leaving Q3 empty and violating authoritative-state reconciliation. The requirement that confirmed relocations appear in another connected client within 2000ms is not genuinely satisfied during overlapping movements: the initiating view of the older movement can hide the newer confirmed placement indefinitely. _show_confirmed must rerender the current authoritative quadrant as well as the cleared optimistic target when its response is stale. The Contract already requires Supabase-authoritative state and cross-client propagation of confirmed relocations; these requirements are appropriate and unambiguous here. This is a code-level reconciliation gap requiring an integration PBI, not a Contract amendment.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {
