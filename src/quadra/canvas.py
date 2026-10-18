@@ -409,6 +409,7 @@ class Canvas:
         else:
             self._cards.pop(card.id, None)
             self._drafts.pop(card.id, None)
+            self._pending.pop(card.id, None)  # its insert response, if any, is now moot
             # Never older than a version retained before: older records are stale.
             self._deleted[card.id] = _deletion_version(card)
         return {card.quadrant_id} | ({current.quadrant_id} if current else set())
@@ -445,11 +446,17 @@ class Canvas:
         ]
 
     def _unconfirmed(self, quadrant_id: str) -> list[_PendingCard]:
-        """Pending cards of the quadrant; a push may have confirmed one before its insert returned."""
+        """Pending cards of the quadrant that are neither confirmed nor deleted.
+
+        A push may have confirmed one before its insert returned, or deleted it: the
+        retained deletion version, not mere absence from the cards, rules it out.
+        """
         return [
             pending
             for pending in self._pending.values()
-            if pending.quadrant_id == quadrant_id and pending.id not in self._cards
+            if pending.quadrant_id == quadrant_id
+            and pending.id not in self._cards
+            and pending.id not in self._deleted
         ]
 
     def _pending_view(self, pending: _PendingCard) -> None:

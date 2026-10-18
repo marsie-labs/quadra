@@ -227,6 +227,41 @@ async def test_delayed_insert_response_does_not_restore_a_deleted_card(
         await _release_all(session_id)
 
 
+async def test_deleted_card_is_not_shown_as_pending_while_its_insert_is_held(
+    user: User, monkeypatch: pytest.MonkeyPatch
+):
+    session_id = create_session("Held Insert").session_id
+    delayed = _Delayed(cards.insert_card)
+    monkeypatch.setattr(cards, "insert_card", delayed)
+    canvases = _record_canvases(monkeypatch)
+    try:
+        await user.open(f"/sessions/{session_id}")
+        await user.should_see("DOES NOT", retries=100)
+        (canvas,) = canvases
+        await _wait_until(lambda: all(b.enabled for b in user.find(marker="submit-0").elements))
+        user.find(marker="display-name").type("Alice")
+        user.find(marker="content-0").type("Held insert")
+        user.find(marker="submit-0").click()
+        await asyncio.wait_for(asyncio.to_thread(delayed.entered.wait, 10), timeout=15)
+        card = delayed.card
+        # The insert is committed but its response is held: the card still shows as pending.
+        await _wait_until(lambda: f"pending-{card.id}" in _markers(user))
+        await asyncio.to_thread(cards.soft_delete_card, session_id, card.id)
+        await _wait_until(lambda: card.id in canvas._deleted)
+        # Before the response is released, the deletion alone removes the card.
+        _assert_not_shown(user, canvas, card, "Held insert")
+        assert not canvas._unconfirmed(card.quadrant_id)
+        await asyncio.sleep(0.5)
+        _assert_not_shown(user, canvas, card, "Held insert")
+        await _release_and_finish(delayed, canvas)
+        # After it, the card neither reappears nor leaves a pending entry behind.
+        _assert_gone(user, canvas, card, session_id, "Held insert")
+        assert card.id not in canvas._pending
+    finally:
+        delayed.release.set()
+        await _release_all(session_id)
+
+
 async def test_delayed_edit_response_does_not_restore_a_deleted_card(
     user: User, monkeypatch: pytest.MonkeyPatch
 ):
