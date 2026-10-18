@@ -47,7 +47,8 @@
     "14c9ea5dac3944889d932d7353ef2e92-canvas-pending-move",
     "14c9ea5dac3944889d932d7353ef2e92-canvas-rollback-failed-ops",
     "14c9ea5dac3944889d932d7353ef2e92-canvas-cross-client-propagation",
-    "14c9ea5dac3944889d932d7353ef2e92-retain-deletion-versions-in-canvas"
+    "14c9ea5dac3944889d932d7353ef2e92-retain-deletion-versions-in-canvas",
+    "14c9ea5dac3944889d932d7353ef2e92-suppress-pending-render-of-soft-deleted-card"
   ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0002.md",
@@ -55,7 +56,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. In canvas.py, a committed insertion whose service response is still unresolved remains in _pending even after a Realtime soft-delete removes it from _cards. _unconfirmed then renders that deleted card as pending again because it checks only absence from _cards, not the retained deletion version, violating authoritative reconciliation and removal from connected canvases. The soft-deletion Definition-of-Done item is not fully realized: deleting an already committed card can make its pending representation reappear on the initiating canvas until the insertion response resolves. The added delayed-insert deletion test checks disappearance only after releasing the response, leaving this interval unprotected. This is a code-level reconciliation gap: the Contract already requires soft-deleted cards to disappear from connected canvases and Supabase to remain authoritative. Pending insertion rendering or cleanup must respect confirmed deletions; no Contract amendment is needed.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {
