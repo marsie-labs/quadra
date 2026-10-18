@@ -70,8 +70,10 @@ def _existing():
 @given("Polling is disabled and database commit and other-client update timestamps are captured")
 def _instrumented():
     source = HARNESS.read_text()
-    assert "_forbid_polling(monkeypatch)" in source and "class _Timed" in source
-    assert "rendered_at - timed.started" in source and "elapsed < LATENCY_LIMIT" in source
+    assert "_forbid_polling(monkeypatch)" in source and "_record_updates(monkeypatch" in source
+    assert "_commit_time(canvas_b.received[0], offset)" in source
+    assert "delivery.page - delivery.commit < LATENCY_LIMIT" in source
+    assert "delivery.socket - delivery.commit < LATENCY_LIMIT" in source
 
 
 @when(
