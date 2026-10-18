@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "canvas-cross-client-propagation",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0012.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The propagation test times changes to Canvas._columns via _shown(), which observes server-side NiceGUI elements rather than the required second-client page and NiceGUI WebSocket updates; _Timed.started also records request start, not database commit, despite the scenario requiring captured commit timestamps. The diff adds no canvas implementation changes, and its tests therefore do not establish the scoped propagation requirement using the Contract's mandated delivery measurements.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
