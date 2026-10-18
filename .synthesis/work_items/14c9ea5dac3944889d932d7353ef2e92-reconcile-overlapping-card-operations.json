@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "reconcile-overlapping-card-operations",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0016.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The active-card branch of _fold clears only _moving, explicitly retains _pending, and leaves _drafts intact, contrary to the PBI requirement that every Realtime fold clear optimistic insertion/edit state and rerender authoritative cards. The overlap tests assert cleanup only after releasing the held response, so they do not verify that a newer Realtime change clears the pending insertion or editor while that response remains unresolved.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
