@@ -159,8 +159,7 @@ class Canvas:
             return
         composer.value = ""
         # The push of this same insert may have arrived already; cards are keyed by id.
-        for affected in self._fold(asdict(card)) | {quadrant_id}:
-            self._render(affected)
+        self._show_confirmed(card, quadrant_id)
 
     async def _insert(self, pending: _PendingCard, index: int) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be added."""
@@ -195,10 +194,7 @@ class Canvas:
             ui.notify("Card could not be updated", type="negative")
             return
         self._drafts.pop(card_id, None)
-        # The push of this same update may have arrived already; stale ones are ignored.
-        affected = self._fold(asdict(card)) or {card.quadrant_id}
-        for quadrant_id in affected:
-            self._render(quadrant_id)
+        self._show_confirmed(card)
 
     async def _move(self, card_id: str, position: int | None, index: float | None) -> None:
         """Move the card to quadrant `position` at `index` and show the confirmed placement.
@@ -211,11 +207,11 @@ class Canvas:
         if move is None:
             return
         card = await self._relocate(card_id, move.quadrant_id, move.index)
-        self._moving.pop(card_id, None)
+        shown = self._clear_move(move)
         if card is None:
-            self._render_all(move.quadrant_id, move.origin_quadrant_id)
+            self._render_all(*shown, *self._current_quadrants(card_id))
             return
-        self._show_confirmed(card)
+        self._show_confirmed(card, *shown)
 
     def _start_move(
         self, card_id: str, position: int | None, index: float | None
@@ -238,11 +234,38 @@ class Canvas:
         for quadrant_id in quadrant_ids:
             self._render(quadrant_id)
 
-    def _show_confirmed(self, card: Card) -> None:
-        """Show a card the database confirmed, wherever the fold places it."""
+    def _clear_move(self, move: _PendingMove) -> set[str]:
+        """Drop `move` if it is still the card's optimistic move; the quadrants it showed."""
+        if self._moving.get(move.card_id) is move:
+            del self._moving[move.card_id]
+        return {move.quadrant_id, move.origin_quadrant_id}
+
+    def _clear_optimistic(self, card_id: str) -> set[str]:
+        """Drop the card's optimistic insert and move; the quadrants they showed it in."""
+        shown: set[str] = set()
+        pending = self._pending.pop(card_id, None)
+        if pending is not None:
+            shown.add(pending.quadrant_id)
+        move = self._moving.pop(card_id, None)
+        if move is not None:
+            shown |= {move.quadrant_id, move.origin_quadrant_id}
+        return shown
+
+    def _current_quadrants(self, card_id: str) -> set[str]:
+        """The quadrant the authoritative cards place the card in; none if it is absent."""
+        card = self._cards.get(card_id)
+        return {card.quadrant_id} if card else set()
+
+    def _show_confirmed(self, card: Card, *shown: str) -> None:
+        """Show the authoritative state of a card the database confirmed.
+
+        `shown` are the quadrants its cleared optimistic entries showed it in. A response
+        older than what the view holds is discarded by the fold, but the card's current
+        quadrant, `shown` and the response's own are rendered all the same.
+        """
         # The push of this same change may have arrived already; stale ones are ignored.
-        affected = self._fold(asdict(card)) or {card.quadrant_id}
-        for quadrant_id in affected:
+        affected = self._fold(asdict(card)) | set(shown) | {card.quadrant_id}
+        for quadrant_id in affected | self._current_quadrants(card.id):
             self._render(quadrant_id)
 
     async def _relocate(self, card_id: str, quadrant_id: str, index: int) -> Card | None:
@@ -300,8 +323,7 @@ class Canvas:
             ui.notify("Card could not be deleted", type="negative")
             return
         # The push of this same deletion may have arrived already; the fold is idempotent.
-        for quadrant_id in self._fold(asdict(card)):
-            self._render(quadrant_id)
+        self._show_confirmed(card, *self._clear_optimistic(card.id))
 
     def _open_editor(self, card: Card) -> None:
         self._drafts[card.id] = card.content
@@ -404,21 +426,31 @@ class Canvas:
         card = _merged(current, record, self._deleted.get(record.get("id", "")))
         if card is None:
             return set()
-        affected = {card.quadrant_id} | ({current.quadrant_id} if current else set())
+        # Authoritative state replaces the card's optimistic move, and every quadrant it
+        # showed the card in is rerendered. An unconfirmed insert stays until its own
+        # response resolves, but is no longer shown once the card is in the cards.
+        affected = {card.quadrant_id} | self._shown_in(card.id, current)
         if card.deleted_at is None:
+            self._moving.pop(card.id, None)
             self._cards[card.id] = card
         else:
+            self._clear_optimistic(card.id)
             self._cards.pop(card.id, None)
             self._drafts.pop(card.id, None)
-            self._pending.pop(card.id, None)  # its insert response, if any, is now moot
-            # The confirmed deletion wins over an unresolved optimistic move, whose
-            # target quadrant shows the card too.
-            move = self._moving.pop(card.id, None)
-            if move is not None:
-                affected |= {move.quadrant_id, move.origin_quadrant_id}
             # Never older than a version retained before: older records are stale.
             self._deleted[card.id] = _deletion_version(card)
         return affected
+
+    def _shown_in(self, card_id: str, current: Card | None) -> set[str]:
+        """The quadrants showing the card now: its own, its pending insert, its move."""
+        shown = {current.quadrant_id} if current else set()
+        pending = self._pending.get(card_id)
+        if pending is not None:
+            shown.add(pending.quadrant_id)
+        move = self._moving.get(card_id)
+        if move is not None:
+            shown |= {move.quadrant_id, move.origin_quadrant_id}
+        return shown
 
     def _render(self, quadrant_id: str) -> None:
         """Rebuild one quadrant's cards by index, then card id."""
