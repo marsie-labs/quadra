@@ -67,5 +67,35 @@
     "quiz_answers": null,
     "quiz_justification": null,
     "failed_checks": null
+  },
+  {
+    "artifact_id": "canvas-cross-client-propagation",
+    "stage": "INTEGRATE",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "end-to-end",
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": {
+      "end-to-end": ""
+    }
+  },
+  {
+    "artifact_id": "canvas-cross-client-propagation",
+    "stage": "INTEGRATE",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "end-to-end",
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": {
+      "end-to-end": "    from starlette.testclient import TestClient as TestClient  # noqa\n\ntests/step_defs/test_access_existing_session_link.py::test_access_existing_session_link\ntests/step_defs/test_access_existing_session_link.py::test_access_existing_session_link\ntests/step_defs/test_access_existing_session_link.py::test_access_existing_session_link\ntests/step_defs/test_access_non_existent_session_link.py::test_access_non_existent_session_link\ntests/step_defs/test_access_non_existent_session_link.py::test_access_non_existent_session_link\ntests/step_defs/test_create_session_success.py::test_create_session_success\ntests/step_defs/test_create_session_success.py::test_create_session_success\ntests/step_defs/test_create_session_validation.py::test_create_session_validation\ntests/step_defs/test_create_session_validation.py::test_create_session_validation\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_sync/client.py:309: DeprecationWarning: The 'timeout' parameter is deprecated. Please configure it in the http client instead.\n    return SyncPostgrestClient(\n\ntests/step_defs/test_access_existing_session_link.py::test_access_existing_session_link\ntests/step_defs/test_access_existing_session_link.py::test_access_existing_session_link\ntests/step_defs/test_access_existing_session_link.py::test_access_existing_session_link\ntests/step_defs/test_access_non_existent_session_link.py::test_access_non_existent_session_link\ntests/step_defs/test_access_non_existent_session_link.py::test_access_non_existent_session_link\ntests/step_defs/test_create_session_success.py::test_create_session_success\ntests/step_defs/test_create_session_success.py::test_create_session_success\ntests/step_defs/test_create_session_validation.py::test_create_session_validation\ntests/step_defs/test_create_session_validation.py::test_create_session_validation\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_sync/client.py:309: DeprecationWarning: The 'verify' parameter is deprecated. Please configure it in the http client instead.\n    return SyncPostgrestClient(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED tests/step_defs/test_deliver_realtime_push_before_building_the_card_ui.py::test_deliver_realtime_push_before_building_the_card_ui\n============ 1 failed, 15 passed, 19 warnings in 157.22s (0:02:37) ============="
+    }
   }
 ]
