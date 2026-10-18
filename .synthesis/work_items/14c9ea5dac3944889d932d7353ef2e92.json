@@ -46,7 +46,8 @@
     "14c9ea5dac3944889d932d7353ef2e92-canvas-pending-insert",
     "14c9ea5dac3944889d932d7353ef2e92-canvas-pending-move",
     "14c9ea5dac3944889d932d7353ef2e92-canvas-rollback-failed-ops",
-    "14c9ea5dac3944889d932d7353ef2e92-canvas-cross-client-propagation"
+    "14c9ea5dac3944889d932d7353ef2e92-canvas-cross-client-propagation",
+    "14c9ea5dac3944889d932d7353ef2e92-retain-deletion-versions-in-canvas"
   ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0002.md",
@@ -54,7 +55,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. In src/quadra/canvas.py, _fold removes deleted cards from _cards without retaining their timestamp, while _is_stale only compares against a card still in _cards. A delayed insert, edit or relocation response arriving after another participant's confirmed deletion can therefore restore the older active card to the canvas, violating the Contract's authoritative persisted-state and reconciliation requirements. The soft-delete requirement is not reliably true across connected canvases: after a deletion notification removes a card, _submit, _save_edit or _show_confirmed can fold an older successful response back into the view. With no retained deletion version, the card can remain visible despite its persisted deleted_at being non-null. The Contract already correctly requires soft-deleted cards to disappear from connected canvases and Supabase to remain authoritative. This is a code-level reconciliation gap requiring an integration fix, such as retaining deletion versions and rejecting older operation responses, rather than a spec amendment.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {
