@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "id": "bd7ab69b-21bc-4068-94bc-0fe4a6454f94",
+  "timestamp": "2026-10-17T23:58:53Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "tests/features/propagate_every_supported_card_operation_to_another_client.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 11,
+              "content_hash": "sha256:e42bde4078406f9ed2b587ac2784eff24c58e631f22a06298cbbf8ab39895a9b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_canvas_propagation.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 326,
+              "content_hash": "sha256:6632d06d005aceb6c262d3e367d02d93d63f20fe9948a7e018ba0fee1cac9b8a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_propagate_every_supported_card_operation_to_another_client.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 101,
+              "content_hash": "sha256:ace1c048a018376e07c99f4cda840a2d6ff056f69acfdd8ffaa991c07104a13a"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0012",
+    "rev": 1,
+    "base_revision": "68df52cc421f3f9d39836288c1a7b3f6c683c7d9"
+  }
+}
