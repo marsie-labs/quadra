@@ -68,20 +68,33 @@ def _instant(timestamp: str) -> datetime:
     return datetime.fromisoformat(timestamp)
 
 
-def _merged(current: Card | None, record: dict) -> Card | None:
-    """The card a change record yields on top of `current`; None if incomplete or stale."""
+def _merged(
+    current: Card | None, record: dict, deleted: datetime | None = None
+) -> Card | None:
+    """The card a change record yields on top of `current`; None if incomplete or stale.
+
+    `deleted` is the retained deletion version of the card, if this view saw it deleted.
+    """
     values = asdict(current) if current else {}
     values |= {name: record[name] for name in _CARD_FIELDS & record.keys()}
     if set(values) != set(_CARD_FIELDS):
         logger.warning("Ignoring incomplete card change %s", record)
         return None
     card = Card(**values)
-    return None if _is_stale(card, current) else card
+    return None if _is_stale(card, current, deleted) else card
 
 
-def _is_stale(card: Card, current: Card | None) -> bool:
-    """True for a notification of a change older than what is already shown."""
-    return current is not None and _instant(card.updated_at) < _instant(current.updated_at)
+def _deletion_version(card: Card) -> datetime:
+    """The instant a deleted card's deletion became current."""
+    return max(_instant(card.updated_at), _instant(card.deleted_at or card.updated_at))
+
+
+def _is_stale(card: Card, current: Card | None, deleted: datetime | None = None) -> bool:
+    """True for a notification of a change older than what is already shown or deleted."""
+    version = _instant(card.updated_at)
+    if current is not None and version < _instant(current.updated_at):
+        return True
+    return deleted is not None and version < deleted
 
 
 class Canvas:
@@ -102,6 +115,9 @@ class Canvas:
                     self._compose(position)
         self._quadrant_ids: list[str] = []
         self._cards: dict[str, Card] = {}
+        # card id -> version of its deletion seen by this view, so that a delayed older
+        # response cannot restore it; transient, Supabase stays authoritative.
+        self._deleted: dict[str, datetime] = {}
         self._pending: dict[str, _PendingCard] = {}  # card id -> insert awaiting confirmation
         self._moving: dict[str, _PendingMove] = {}  # card id -> move awaiting confirmation
         self._drafts: dict[str, str] = {}  # card id -> text in its open editor
@@ -385,7 +401,7 @@ class Canvas:
     def _fold(self, record: dict) -> set[str]:
         """Fold one card record into the cards; return the quadrants it affects."""
         current = self._cards.get(record.get("id", ""))
-        card = _merged(current, record)
+        card = _merged(current, record, self._deleted.get(record.get("id", "")))
         if card is None:
             return set()
         if card.deleted_at is None:
@@ -393,6 +409,8 @@ class Canvas:
         else:
             self._cards.pop(card.id, None)
             self._drafts.pop(card.id, None)
+            # Never older than a version retained before: older records are stale.
+            self._deleted[card.id] = _deletion_version(card)
         return {card.quadrant_id} | ({current.quadrant_id} if current else set())
 
     def _render(self, quadrant_id: str) -> None:
