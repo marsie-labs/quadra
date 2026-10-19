@@ -240,13 +240,10 @@ class Canvas:
             del self._moving[move.card_id]
         return {move.quadrant_id, move.origin_quadrant_id}
 
-    def _clear_optimistic(self, card_id: str, keep_insert: bool = False) -> set[str]:
-        """Drop the card's optimistic insert and move; the quadrants they showed it in.
-
-        `keep_insert` leaves the insert for its own response to resolve.
-        """
+    def _clear_optimistic(self, card_id: str) -> set[str]:
+        """Drop the card's optimistic insert and move; the quadrants they showed it in."""
         shown: set[str] = set()
-        pending = None if keep_insert else self._pending.pop(card_id, None)
+        pending = self._pending.pop(card_id, None)
         if pending is not None:
             shown.add(pending.quadrant_id)
         move = self._moving.pop(card_id, None)
@@ -434,11 +431,9 @@ class Canvas:
         affected = {card.quadrant_id} | self._shown_in(card.id, current)
         # A replay of what is already held (a response after its own push) is no news,
         # and must not clear what the participant started since. The first sight of a
-        # card is the push of its own insert: that insert's response resolves its
-        # pending entry (it is no longer shown once the card is in the cards), while
-        # any newer change clears it.
+        # card, such as the push of its own insert, and any newer change clear it.
         if current is None or _instant(card.updated_at) > _instant(current.updated_at):
-            self._clear_optimistic(card.id, keep_insert=current is None and not card.deleted_at)
+            self._clear_optimistic(card.id)
             self._drafts.pop(card.id, None)
         self._store(card)
         return affected

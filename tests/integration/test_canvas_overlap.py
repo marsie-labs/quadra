@@ -198,6 +198,34 @@ async def _request_move(user: User, card_id: str, position: int, index: int) -> 
     user.find(marker=f"move-{card_id}").click()
 
 
+async def test_push_of_own_insert_clears_pending_before_the_response(
+    user: User, monkeypatch: pytest.MonkeyPatch
+):
+    session_id = create_session("Overlap Insert Push").session_id
+    held = _hold(monkeypatch, "insert_card", after_commit=True)
+    canvases = _record_canvases(monkeypatch)
+    try:
+        await user.open(f"/sessions/{session_id}")
+        await user.should_see("DOES NOT", retries=100)
+        (canvas,) = canvases
+        await _until(lambda: all(b.enabled for b in canvas._submit_buttons))
+        user.find(marker="display-name").type("Alice")
+        user.find(marker="content-0").type("Fresh")
+        user.find(marker="submit-0").click()
+        await _entered(held)
+        (card,) = cards.list_cards(session_id)
+        assert card.id in canvas._pending or card.id in canvas._cards
+
+        # The first fold of the card clears its pending entry; the response is still held.
+        await _until(lambda: card.id in canvas._cards)
+        _assert_authoritative(user, canvas, session_id, card.id, ("Fresh", 0))
+        await _settle(held, session_id)
+        _assert_authoritative(user, canvas, session_id, card.id, ("Fresh", 0))
+    finally:
+        held.release.set()
+        await _release_all(session_id)
+
+
 @pytest.mark.parametrize("change", ["edit", "move", "delete"])
 async def test_held_insert_overlapped_by_a_remote_change(
     user: User, monkeypatch: pytest.MonkeyPatch, change: str
