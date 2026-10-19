@@ -41,5 +41,18 @@
     "failed_checks": {
       "regression": "tests/integration/test_canvas_pending_insert.py: 1 warning\ntests/integration/test_canvas_pending_move.py: 3 warnings\ntests/integration/test_canvas_propagation.py: 5 warnings\ntests/integration/test_canvas_relocate.py: 4 warnings\ntests/integration/test_canvas_rollback.py: 2 warnings\ntests/integration/test_realtime.py: 6 warnings\ntests/integration/test_realtime_cards.py: 4 warnings\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_async/client.py:310: DeprecationWarning: The 'timeout' parameter is deprecated. Please configure it in the http client instead.\n    return AsyncPostgrestClient(\n\ntests/integration/test_canvas_cards.py: 9 warnings\ntests/integration/test_canvas_delete.py: 7 warnings\ntests/integration/test_canvas_edit.py: 4 warnings\ntests/integration/test_canvas_insert.py: 8 warnings\ntests/integration/test_canvas_overlap.py: 10 warnings\ntests/integration/test_canvas_pending_insert.py: 1 warning\ntests/integration/test_canvas_pending_move.py: 3 warnings\ntests/integration/test_canvas_propagation.py: 5 warnings\ntests/integration/test_canvas_relocate.py: 4 warnings\ntests/integration/test_canvas_rollback.py: 2 warnings\ntests/integration/test_realtime.py: 6 warnings\ntests/integration/test_realtime_cards.py: 4 warnings\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_async/client.py:310: DeprecationWarning: The 'verify' parameter is deprecated. Please configure it in the http client instead.\n    return AsyncPostgrestClient(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED tests/integration/test_canvas_relocate.py::test_moved_card_is_persisted_and_shown_without_replacing_authorship\nFAILED tests/integration/test_realtime_cards.py::test_card_insert_reaches_second_user_without_polling\n=========== 2 failed, 99 passed, 1099 warnings in 604.75s (0:10:04) ============"
     }
+  },
+  {
+    "artifact_id": "reconcile-overlapping-card-operations",
+    "stage": "ASSEMBLE",
+    "passed": true,
+    "policy": "agent",
+    "approver": null,
+    "rejection_reason": null,
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": null
   }
 ]
