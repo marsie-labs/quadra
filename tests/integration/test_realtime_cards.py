@@ -18,7 +18,7 @@ from quadra.sessions import create_session
 from test_realtime import (  # noqa: F401  (register is a pytest fixture)
     _assert_within_limit,
     _commit_quadrant_position,
-    _commit_status,
+    _commit_feature_name,
     _next_change,
     _observe_in_dom,
     _record_notifications,
@@ -218,7 +218,7 @@ async def test_session_and_quadrant_events_still_arrive_beside_card_events(regis
     await register(session_id, "first", first.append)
     await register(session_id, "second", second.append)
 
-    status, _ = await _commit_status(session_id)
+    status, _ = await _commit_feature_name(session_id)
     await _next_change(first, 1)
     position, _ = await _commit_quadrant_position(session_id)
     await _next_change(first, 2)
@@ -227,7 +227,7 @@ async def test_session_and_quadrant_events_still_arrive_beside_card_events(regis
     await _next_change(second, 3)
 
     expected = {
-        "workspaces": ("status", status),
+        "workspaces": ("feature_name", status),
         "quadrants": ("position", position),
         "cards": ("id", card_id),
     }
