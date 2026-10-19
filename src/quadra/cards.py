@@ -19,6 +19,9 @@ _COLUMNS = (
     "created_at, updated_at, deleted_at"
 )
 
+# Rows requested per page by list_cards; read at call time.
+_PAGE_SIZE = 1000
+
 
 class CardError(Exception):
     """Base class of card service errors."""
@@ -48,17 +51,26 @@ class Card:
 def list_cards(session_id: str, client: Client | None = None) -> list[Card]:
     """Non-deleted cards of the session by quadrant position, index, then card id."""
     session_id = _uuid(session_id, "session_id")
-    rows = _run(
-        lambda: (
-            (client or get_client())
-            .table("cards")
-            .select(f"{_COLUMNS}, quadrants(position)")
-            .eq("session_id", session_id)
-            .is_("deleted_at", "null")
-            .execute()
-            .data
+    client = client or get_client()
+    page_size = _PAGE_SIZE
+    rows: list[dict] = []
+    while True:
+        start = len(rows)
+        page = _run(
+            lambda: (
+                client.table("cards")
+                .select(f"{_COLUMNS}, quadrants(position)")
+                .eq("session_id", session_id)
+                .is_("deleted_at", "null")
+                .order("id")
+                .range(start, start + page_size - 1)
+                .execute()
+                .data
+            )
         )
-    )
+        rows.extend(page)
+        if len(page) < page_size:
+            break
     rows.sort(key=lambda row: (row["quadrants"]["position"], row["index"], row["id"]))
     return [_to_card(row) for row in rows]
 
