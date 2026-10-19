@@ -1,7 +1,7 @@
 ---
 artifact_type: strategy
 id: STRAT-0003
-status: Draft
+status: Approved
 ---
 
 # Strategy Document: The quadra session lifecycle will be extended to a 'closed' state to provide a secure boundary for finalized decision data retrieval by external agents.
@@ -10,7 +10,7 @@ status: Draft
 
 **Thesis:** The quadra session lifecycle will be extended to a 'closed' state to provide a secure boundary for finalized decision data retrieval by external agents.
 
-**From Problem Graph:** (none)
+**From Problem Graph:** DG-0003
 
 ## Goals (What We Aim to Achieve)
 
@@ -130,6 +130,6 @@ Breaks the immutability guarantee required by external agents for reliable integ
 ## Sign-Off
 
 **Authored by:** google:gemini-3.1-flash-lite  
-**Reviewed by:** _(pending)_ — _(pending)_
+**Reviewed by:** Marco — mcrasso@marsie.io
 
-**Ready for SPEC:** [ ] Yes [ ] No
+**Ready for SPEC:** [x] Yes [ ] No
