@@ -1,0 +1,18 @@
+[
+  {
+    "artifact_id": "SPEC-0003",
+    "stage": "SPEC",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "adr-decisions-pending, human-signoff",
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": {
+      "adr-decisions-pending": "ADR-0005, ADR-0006, ADR-0007",
+      "human-signoff": ""
+    }
+  }
+]
