@@ -58,7 +58,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. The migration assigns updated_at using PostgreSQL now() (transaction-start time), while canvas.py::_is_stale treats that timestamp as authoritative mutation order. If an earlier-started transaction updates a card after a later-started transaction commits, its committed state is discarded as stale by connected canvases, violating server authority and collaborative reconciliation. Confirmed edits or relocations can remain permanently unapplied in another connected client: cards_enforce_integrity can generate an updated_at older than the preceding committed version, and _is_stale rejects the resulting notification. Therefore the DoD requirement that every confirmed supported operation reach the second client within 2000ms is not genuinely satisfied. The Contract already correctly requires authoritative persisted state and propagation of confirmed operations; the failure is the code's use of transaction-start timestamps as a mutation-order guarantee. This needs an integration fix to version generation and reconciliation, not a Contract amendment.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {
