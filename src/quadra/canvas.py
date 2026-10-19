@@ -20,7 +20,7 @@ from nicegui import Client, ui
 from quadra import cards, realtime
 from quadra.cards import Card
 from quadra.realtime import SessionChange
-from quadra.sessions import Session, get_client
+from quadra.sessions import Session, close_session, get_client
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +106,10 @@ class Canvas:
         self._client: Client = ui.context.client
         self._columns: list[ui.column] = []
         self._submit_buttons: list[ui.button] = []
+        self._close_button = ui.button("Close session", on_click=self._close)
+        self._close_button.mark("close-session")
+        self._closed_label = ui.label("Session closed").classes("text-h6 text-negative")
+        self._closed_label.mark("session-closed").set_visibility(False)
         self._display_name = ui.input("Your display name").mark("display-name")
         with ui.grid(columns=2).classes("w-full"):
             for position, name in enumerate(session.quadrants):
@@ -125,6 +129,17 @@ class Canvas:
         self._loading = True
         self._registration: asyncio.Future[None] | None = None
         self._stopped = False  # the client disconnected
+
+    async def _close(self) -> None:
+        """Ask the session service to close the session, then show it as closed.
+
+        Any participant may do this: no credentials or role are checked. The control is
+        not the enforcement; the database is.
+        """
+        status = await asyncio.to_thread(close_session, self._session_id)
+        if status == "closed":
+            self._close_button.set_visibility(False)
+            self._closed_label.set_visibility(True)
 
     def _compose(self, position: int) -> None:
         """The card composer of quadrant `position`, marked content-N and submit-N.
