@@ -112,6 +112,11 @@ class Canvas:
         self._closed_label.mark("session-closed").set_visibility(False)
         self._failure_label = ui.label("Session could not be closed").classes("text-negative")
         self._failure_label.mark("closure-failed").set_visibility(False)
+        self._reload_failure = ui.row().mark("reload-failed")
+        with self._reload_failure:
+            ui.label("Closed session cards could not be reloaded").classes("text-negative")
+            ui.button("Retry", on_click=self._retry_reconcile).mark("retry-reload")
+        self._reload_failure.set_visibility(False)
         self._display_name = ui.input("Your display name").mark("display-name")
         with ui.grid(columns=2).classes("w-full"):
             for position, name in enumerate(session.quadrants):
@@ -133,10 +138,28 @@ class Canvas:
         self._stopped = False  # the client disconnected
         self._closed = False  # a closed state was received; it is never undone
         self._closing = False  # a closure request is unresolved: editing is suspended
+        # Responses of requests started before the latest bump are stale: closure bumps it,
+        # so no older mutation result or load can change what closure reconciled.
+        self._generation = 0
+        self._reconciliation: asyncio.Task[None] | None = None
 
     @property
     def _editable(self) -> bool:
         return not (self._closed or self._closing)
+
+    def _is_current(self, generation: int) -> bool:
+        """True while no closure has invalidated the requests of `generation`."""
+        return generation == self._generation
+
+    def _is_live(self, generation: int) -> bool:
+        """True while `generation` is current and the client is still connected."""
+        return self._is_current(generation) and not self._stopped
+
+    def _show_reload_failure(self, generation: int) -> None:
+        """Offer a retry when the closed session's cards could not be reloaded."""
+        if self._is_live(generation):
+            with self._client:
+                self._reload_failure.set_visibility(True)
 
     async def _close(self) -> None:
         """Ask the session service to close the session, then show it as closed.
@@ -185,13 +208,51 @@ class Canvas:
             return None
 
     def _set_closed(self) -> None:
-        """Latch the closed state: read-only for good, whatever happens to a request."""
+        """Latch the closed state: read-only for good, whatever happens to a request.
+
+        The first sight of closure also invalidates every older response generation,
+        drops the optimistic overlays and reloads the authoritative cards.
+        """
+        first = not self._closed
         self._closed = True
         self._closing = False
         self._close_button.set_visibility(False)
         self._failure_label.set_visibility(False)
         self._closed_label.set_visibility(True)
+        if first:
+            self._start_reconciliation()
         self._refresh_editing()
+
+    def _start_reconciliation(self) -> None:
+        """Invalidate older responses, drop optimistic overlays, reload the cards."""
+        self._generation += 1
+        self._pending.clear()
+        self._moving.clear()
+        self._drafts.clear()
+        self._reload_failure.set_visibility(False)
+        self._reconciliation = asyncio.ensure_future(self._reconcile(self._generation))
+
+    async def _retry_reconcile(self) -> None:
+        self._start_reconciliation()
+        self._refresh_editing()
+
+    async def _reconcile(self, generation: int) -> None:
+        """Replace the cards with the complete authoritative snapshot, unless superseded.
+
+        If the load fails the view stays closed and read-only, with a retry offered; an
+        incomplete result is never shown as the finalized one.
+        """
+        try:
+            snapshot, quadrant_ids = await self._load()
+        except Exception:
+            logger.exception("Closed session %s could not be reloaded", self._session_id)
+            self._show_reload_failure(generation)
+            return
+        if not self._is_live(generation):
+            return
+        self._quadrant_ids = quadrant_ids
+        self._buffered = []
+        self._show(snapshot)
 
     def _refresh_editing(self) -> None:
         """Make the composers and the cards' controls follow whether editing is allowed."""
@@ -222,12 +283,15 @@ class Canvas:
         if not self._submittable(name, content):
             ui.notify("Enter a display name and some text", type="warning")
             return
+        generation = self._generation
         quadrant_id = self._quadrant_ids[position]
         pending = _PendingCard(str(uuid.uuid4()), quadrant_id, content, name)
         index = self._next_index(quadrant_id)
         self._pending[pending.id] = pending
         self._render(quadrant_id)
-        card = await self._insert(pending, index)
+        card = await self._insert(pending, index, generation)
+        if not self._is_current(generation):
+            return  # closure dropped the overlay and reconciled the cards
         self._pending.pop(pending.id, None)
         if card is None:
             self._render(quadrant_id)
@@ -236,7 +300,7 @@ class Canvas:
         # The push of this same insert may have arrived already; cards are keyed by id.
         self._show_confirmed(card, quadrant_id)
 
-    async def _insert(self, pending: _PendingCard, index: int) -> Card | None:
+    async def _insert(self, pending: _PendingCard, index: int, generation: int) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be added."""
         try:
             return await asyncio.to_thread(
@@ -250,7 +314,8 @@ class Canvas:
             )
         except cards.CardError:
             logger.exception("Card could not be added to session %s", self._session_id)
-            ui.notify("Card could not be added", type="negative")
+            if self._is_current(generation):
+                ui.notify("Card could not be added", type="negative")
             return None
 
     async def _save_edit(self, card_id: str) -> None:
@@ -264,14 +329,22 @@ class Canvas:
         if not content.strip():
             ui.notify("Enter some text", type="warning")
             return
-        try:
-            card = await asyncio.to_thread(cards.update_card, self._session_id, card_id, content)
-        except cards.CardError:
-            logger.exception("Card %s could not be updated", card_id)
-            ui.notify("Card could not be updated", type="negative")
+        generation = self._generation
+        card = await self._update(card_id, content, generation)
+        if card is None or not self._is_current(generation):
             return
         self._drafts.pop(card_id, None)
         self._show_confirmed(card)
+
+    async def _update(self, card_id: str, content: str, generation: int) -> Card | None:
+        """The confirmed card, or None (after showing an error) if it could not be updated."""
+        try:
+            return await asyncio.to_thread(cards.update_card, self._session_id, card_id, content)
+        except cards.CardError:
+            logger.exception("Card %s could not be updated", card_id)
+            if self._is_current(generation):
+                ui.notify("Card could not be updated", type="negative")
+            return None
 
     async def _move(self, card_id: str, position: int | None, index: float | None) -> None:
         """Move the card to quadrant `position` at `index` and show the confirmed placement.
@@ -283,7 +356,10 @@ class Canvas:
         move = self._start_move(card_id, position, index) if self._editable else None
         if move is None:
             return
-        card = await self._relocate(card_id, move.quadrant_id, move.index)
+        generation = self._generation
+        card = await self._relocate(card_id, move.quadrant_id, move.index, generation)
+        if not self._is_current(generation):
+            return
         shown = self._clear_move(move)
         if card is None:
             self._render_all(*shown, *self._current_quadrants(card_id))
@@ -345,7 +421,9 @@ class Canvas:
         for quadrant_id in affected | self._current_quadrants(card.id):
             self._render(quadrant_id)
 
-    async def _relocate(self, card_id: str, quadrant_id: str, index: int) -> Card | None:
+    async def _relocate(
+        self, card_id: str, quadrant_id: str, index: int, generation: int
+    ) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be moved."""
         try:
             return await asyncio.to_thread(
@@ -353,7 +431,8 @@ class Canvas:
             )
         except cards.CardError:
             logger.exception("Card %s could not be moved", card_id)
-            ui.notify("Card could not be moved", type="negative")
+            if self._is_current(generation):
+                ui.notify("Card could not be moved", type="negative")
             return None
 
     def _mover(self, card: Card) -> None:
@@ -395,11 +474,15 @@ class Canvas:
         self._dismiss(dialog)
         if not self._editable:
             return
+        generation = self._generation
         try:
             card = await asyncio.to_thread(cards.soft_delete_card, self._session_id, card_id)
         except cards.CardError:
             logger.exception("Card %s could not be deleted", card_id)
-            ui.notify("Card could not be deleted", type="negative")
+            if self._is_current(generation):
+                ui.notify("Card could not be deleted", type="negative")
+            return
+        if not self._is_current(generation):
             return
         # The push of this same deletion may have arrived already; the fold is idempotent.
         self._show_confirmed(card, *self._clear_optimistic(card.id))
@@ -437,9 +520,10 @@ class Canvas:
     async def start(self) -> None:
         """Register for pushes, then load the active cards and show them."""
         await self._client.connected()
+        generation = self._generation
         snapshot = await self._register_and_load()
-        if snapshot is None or self._stopped:
-            return
+        if snapshot is None or self._stopped or not self._is_current(generation):
+            return  # a closure meanwhile reloads the cards itself
         self._show(snapshot)
 
     def _show(self, snapshot: list[Card]) -> None:
