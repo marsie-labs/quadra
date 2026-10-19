@@ -10,7 +10,8 @@ from nicegui import ui
 from nicegui.testing import User
 
 from quadra import app as quadra_app
-from quadra import cards
+from quadra import cards, realtime
+from quadra.realtime import SessionChange
 from quadra.canvas import _load_quadrant_ids
 from quadra.sessions import create_session
 
@@ -51,20 +52,36 @@ def _t2_commits_while_t1_holds(
     return t1, _row(card_id)
 
 
-def _t1_commits(t1: psycopg.Connection, statement: tuple[str, tuple]) -> None:
-    with t1:
-        t1.execute(*statement)
+def _t1_commits(t1: psycopg.Connection, statement: tuple[str, tuple]) -> float:
+    """T1 runs its statement and commits; the clock reading taken just before the commit."""
+    t1.execute(*statement)
+    committing = time.perf_counter()
+    t1.commit()
     t1.close()
+    return committing
 
 
 async def _commit_and_wait(
     t1: psycopg.Connection, statement: tuple[str, tuple], shown: Callable[[], bool]
 ) -> float:
-    """T1 commits; seconds until the connected canvas shows its state."""
-    await asyncio.to_thread(_t1_commits, t1, statement)
-    committed = time.perf_counter()
+    """T1 commits; seconds from the commit until the connected canvas shows its state.
+
+    The clock starts in the commit worker, before the commit call returns, so any delay
+    before the coroutine resumes counts towards the interval rather than being excluded.
+    """
+    committing = await asyncio.to_thread(_t1_commits, t1, statement)
     await _until(shown, timeout=10)
-    return time.perf_counter() - committed
+    return time.perf_counter() - committing
+
+
+def _newer_deletion(pushed: list[SessionChange], after: datetime) -> bool:
+    """Whether a pushed card change carries a deletion version later than `after`."""
+    return any(
+        change.table == "cards"
+        and change.record.get("deleted_at")
+        and datetime.fromisoformat(change.record["deleted_at"]) > after
+        for change in pushed
+    )
 
 
 def _texts(user: User) -> list[str]:
@@ -128,13 +145,19 @@ async def test_soft_delete_committed_last_has_the_later_deleted_at(user: User):
             _t2_commits_while_t1_holds, card.id, (_DELETE, (card.id,))
         )
         await _until(lambda: "Draft" not in _texts(user))
+        assert t2_row[1] is not None
+        t2_deleted_at = t2_row[1]
+        # T2's delete already emptied the canvas, so the page alone cannot show T1's
+        # delete arriving: observe T1's own notification through a second view.
+        pushed: list[SessionChange] = []
+        await realtime.register_view(session_id, "probe", pushed.append)
         elapsed = await _commit_and_wait(
-            t1, (_DELETE, (card.id,)), lambda: "Draft" not in _texts(user)
+            t1, (_DELETE, (card.id,)), lambda: _newer_deletion(pushed, t2_deleted_at)
         )
+        assert "Draft" not in _texts(user)
     finally:
         await _release_all(session_id)
 
-    assert t2_row[1] is not None
     deleted_at = _row(card.id)[1]
-    assert deleted_at is not None and deleted_at > t2_row[1]
+    assert deleted_at is not None and deleted_at > t2_deleted_at
     assert elapsed < LATENCY_LIMIT

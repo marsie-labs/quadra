@@ -1,0 +1,73 @@
+{
+  "version": "1.0.0",
+  "id": "7b985b12-cdc5-407d-b230-3ff6b33a7b12",
+  "timestamp": "2026-10-19T03:20:48Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "tests/integration/test_cards_commit_order.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 13,
+              "end_line": 14,
+              "content_hash": "sha256:d0d6c47d67cf2ed4def329182290931e68978de663d2e9e36bc3dd4db49700f1"
+            },
+            {
+              "start_line": 55,
+              "end_line": 59,
+              "content_hash": "sha256:bcebd0fa801a0a58114521691372c540bef266d54a530a6ea8cf112d51e52d04"
+            },
+            {
+              "start_line": 61,
+              "end_line": 61,
+              "content_hash": "sha256:269b2b667745a46de957cd545450dc87296e8acaaea03169f8db9e6d7aca8260"
+            },
+            {
+              "start_line": 67,
+              "end_line": 72,
+              "content_hash": "sha256:e8bede54934027ece503b0ae6d7c0ec03166433663da5df3a7b2c916aac7a8e0"
+            },
+            {
+              "start_line": 74,
+              "end_line": 84,
+              "content_hash": "sha256:ab1430855575794f1327f0e132a260947806f310fa4d4d2c10cf232ba361b3f1"
+            },
+            {
+              "start_line": 148,
+              "end_line": 153,
+              "content_hash": "sha256:d7b1261ef223d5ac9b7f4678f611e1ca5446c618125e05f270232ed02c62b397"
+            },
+            {
+              "start_line": 155,
+              "end_line": 155,
+              "content_hash": "sha256:9ea7a4408a771b85a906288142d3588bddd6dffb98c134f1862be9f1491d09a8"
+            },
+            {
+              "start_line": 157,
+              "end_line": 157,
+              "content_hash": "sha256:cb32b8a4d6b27563869aaf63b07bd2442a9e943d57c7eba927b01f4067e0042b"
+            },
+            {
+              "start_line": 162,
+              "end_line": 162,
+              "content_hash": "sha256:039c628e3d1cb2d8e37db21bf09221230c83e8f360ea169dc9522271ff29fed2"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0017",
+    "rev": 2,
+    "base_revision": "962f956084af596c571d4d298cfaf5406f98b16f"
+  }
+}
