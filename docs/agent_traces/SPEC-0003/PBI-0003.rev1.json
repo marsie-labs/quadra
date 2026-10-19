@@ -1,0 +1,102 @@
+{
+  "version": "1.0.0",
+  "id": "ec4570cc-cd68-400b-b840-d2066bdff961",
+  "timestamp": "2026-10-19T18:50:52Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/cards.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 22,
+              "end_line": 26,
+              "content_hash": "sha256:800a0f02536384744acafd305200b50a80af310a30ec17eac0ba0cf4e70b959e"
+            },
+            {
+              "start_line": 43,
+              "end_line": 46,
+              "content_hash": "sha256:9a59253815c29f4c3d39c16f5935cd55ca0fd718ccb22046b5e746e04bf8574d"
+            },
+            {
+              "start_line": 207,
+              "end_line": 207,
+              "content_hash": "sha256:73aa5c9c8086622add2ebc38341381e5cff82c3907b484fb43b6042f25e18ca2"
+            },
+            {
+              "start_line": 212,
+              "end_line": 220,
+              "content_hash": "sha256:8febe37e263cfd4f5f5bb877b62c00a66b18081ae951eb55ba1d43b35d75d7e2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/features/reject_every_card_mutation_at_the_database_boundary.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 9,
+              "content_hash": "sha256:9dbbf4973474c3e51adddc627d98f47ef0dc132ded78661a10dc0b9684b98270"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_cards_closed_session.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 158,
+              "content_hash": "sha256:90f68d62595c3e0f4f011cbec69f2ef3516d1e869b2be6f8646f84e14a3961d6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_reject_every_card_mutation_at_the_database_boundary.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 154,
+              "content_hash": "sha256:abb04453623be81d143689125f53fb17f736951f99a5a28afb3da4d967513b78"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0003/PBI-0003",
+    "rev": 1,
+    "base_revision": "25892717ccfe08696abda585370fb2a0c6e4fe94"
+  }
+}

@@ -19,6 +19,11 @@ _COLUMNS = (
     "created_at, updated_at, deleted_at"
 )
 
+# The database guard (supabase/migrations/0005_session_closure.sql) rejects writes to a
+# closed session with this SQLSTATE and message.
+_CLOSED_SQLSTATE = "P0001"
+_CLOSED_MESSAGE = "Session is closed"
+
 # Rows requested per page by list_cards; read at call time.
 _PAGE_SIZE = 1000
 
@@ -33,6 +38,10 @@ class CardValidationError(CardError):
 
 class CardPersistenceError(CardError):
     """Supabase failed to persist the request."""
+
+
+class CardSessionClosedError(CardPersistenceError):
+    """The database rejected a mutation because the session is closed."""
 
 
 @dataclass(frozen=True)
@@ -195,12 +204,18 @@ def _run(operation):
     try:
         return operation()
     except APIError as error:
-        # 23xxx are integrity violations: the request itself is invalid.
-        if str(error.code or "").startswith("23"):
-            raise CardValidationError(error.message) from error
-        raise CardPersistenceError(error.message) from error
+        raise _api_error_to_card_error(error) from error
     except Exception as error:
         raise CardPersistenceError(str(error)) from error
+
+
+def _api_error_to_card_error(error: APIError) -> CardError:
+    if (error.code, error.message) == (_CLOSED_SQLSTATE, _CLOSED_MESSAGE):
+        return CardSessionClosedError(error.message)
+    # 23xxx are integrity violations: the request itself is invalid.
+    if str(error.code or "").startswith("23"):
+        return CardValidationError(error.message)
+    return CardPersistenceError(error.message)
 
 
 def _first(rows: list[dict]) -> Card:
