@@ -1,0 +1,53 @@
+{
+  "id": "bb0a32d71ad74217a73344bd9aebe1cd-closed-session-load-read-only",
+  "preset": "feature",
+  "sequence": [
+    {
+      "stage": "DISCOVER",
+      "gate": "DISCOVER_EXIT"
+    },
+    {
+      "stage": "DEFINE",
+      "gate": "GATE_1"
+    },
+    {
+      "stage": "SPEC",
+      "gate": "SPEC_REVIEW"
+    },
+    {
+      "stage": "PBI_PLANNING",
+      "gate": "PBI_VALIDATION"
+    },
+    {
+      "stage": "ASSEMBLE",
+      "gate": "QUALITY_GATE"
+    },
+    {
+      "stage": "REVIEW",
+      "gate": "REVIEW_GATE"
+    },
+    {
+      "stage": "INTEGRATE",
+      "gate": "ACCEPTANCE"
+    }
+  ],
+  "current_index": 4,
+  "rejection_count": 0,
+  "pbi_id": "closed-session-load-read-only",
+  "child_ids": [],
+  "artifact_paths": {
+    "DISCOVER": "docs/discovery/DG-0003.md",
+    "DEFINE": "docs/strategy/STRAT-0003.md",
+    "SPEC": "docs/specs/SPEC-0003.md",
+    "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0007.md"
+  },
+  "pending_artifacts": {},
+  "rework_notes": null,
+  "trunk_merge_pending": false,
+  "clarification_questions": {},
+  "clarifications": {},
+  "clarification_rounds": {},
+  "settings": {
+    "token_quota": null
+  }
+}

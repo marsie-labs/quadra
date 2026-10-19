@@ -34,7 +34,22 @@
   "current_index": 3,
   "rejection_count": 0,
   "pbi_id": null,
-  "child_ids": [],
+  "child_ids": [
+    "bb0a32d71ad74217a73344bd9aebe1cd-db-session-lifecycle-enforcement",
+    "bb0a32d71ad74217a73344bd9aebe1cd-close-session-service",
+    "bb0a32d71ad74217a73344bd9aebe1cd-card-service-closed-rejection",
+    "bb0a32d71ad74217a73344bd9aebe1cd-finalized-retrieval-endpoint",
+    "bb0a32d71ad74217a73344bd9aebe1cd-canvas-close-control",
+    "bb0a32d71ad74217a73344bd9aebe1cd-canvas-closure-failure-handling",
+    "bb0a32d71ad74217a73344bd9aebe1cd-closed-session-load-read-only",
+    "bb0a32d71ad74217a73344bd9aebe1cd-push-closure-to-connected-views",
+    "bb0a32d71ad74217a73344bd9aebe1cd-other-sessions-stay-editable",
+    "bb0a32d71ad74217a73344bd9aebe1cd-discard-pending-changes-on-closure",
+    "bb0a32d71ad74217a73344bd9aebe1cd-ignore-stale-async-results-after-closure",
+    "bb0a32d71ad74217a73344bd9aebe1cd-closure-during-initial-load",
+    "bb0a32d71ad74217a73344bd9aebe1cd-closure-reconciliation-test",
+    "bb0a32d71ad74217a73344bd9aebe1cd-anonymous-lifecycle-surface-test"
+  ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0003.md",
     "DEFINE": "docs/strategy/STRAT-0003.md",
