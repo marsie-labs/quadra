@@ -3,7 +3,7 @@ artifact_type: context map
 id: CTXMAP-quadra
 scope: project
 status: Generated
-generated_from: 8d28bb2ff7ab28c7bde3d8e2db6a4c49edb99f55
+generated_from: d3a5815c5a0276e3cabcc44cf1d33f84cac07912
 ---
 
 # Context Map: quadra
@@ -44,6 +44,9 @@ generated_from: 8d28bb2ff7ab28c7bde3d8e2db6a4c49edb99f55
 | Enforce Feature Name Validation (ADR-0002) | docs/adrs/ADR-0002.md | ADR |
 | Use one server-side push bridge for collaborative views (ADR-0003) | docs/adrs/ADR-0003.md | ADR |
 | Persist authoritative session-scoped cards with soft deletion (ADR-0004) | docs/adrs/ADR-0004.md | ADR |
+| Serialize irreversible closure and card writes at the database boundary (ADR-0005) | docs/adrs/ADR-0005.md | ADR |
+| Make closure dominate pending operations and overlapping loads (ADR-0006) | docs/adrs/ADR-0006.md | ADR |
+| Accept unauthenticated closure and finalized retrieval for v1 (ADR-0007) | docs/adrs/ADR-0007.md | ADR |
 | Architecture (ARCH-0001) | docs/architecture.md | architecture |
 
 ## Validation Checklist
