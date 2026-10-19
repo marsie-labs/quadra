@@ -429,7 +429,7 @@ async def _await_push_replaces_pending(user: User, canvas: Canvas) -> None:
     await _until(lambda: bool(canvas._cards))
     await _until(lambda: not _pending_marked(user))
     assert _once("Inserted", 0)(_shown(user))
-    assert canvas._pending
+    assert not canvas._pending
 
 
 async def _assert_reconciled_once(user: User, canvas: Canvas) -> None:
