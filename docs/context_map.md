@@ -3,7 +3,7 @@ artifact_type: context map
 id: CTXMAP-quadra
 scope: project
 status: Generated
-generated_from: e3f0c14820027fd1e201d5926847fb3628ef4392
+generated_from: e519625b526241e662c4f7ca455ef32cfb535583
 ---
 
 # Context Map: quadra
@@ -26,7 +26,8 @@ generated_from: e3f0c14820027fd1e201d5926847fb3628ef4392
 | Supabase (supabase) | system | docs/architecture.md#8-system-decomposition | Realtime Synchronization Service |
 | Card Service (card-service) | component | docs/architecture.md#8-system-decomposition | Supabase |
 | Realtime Synchronization Service (realtime-service) | component | docs/architecture.md#8-system-decomposition | Collaborative Canvas |
-| Collaborative Canvas (collaborative-canvas) | component | docs/architecture.md#8-system-decomposition | Card Service, Realtime Synchronization Service |
+| Collaborative Canvas (collaborative-canvas) | component | docs/architecture.md#8-system-decomposition | Card Service, Realtime Synchronization Service, Session Management Service |
+| External Agent (external-agent) | system | docs/architecture.md#8-system-decomposition | NiceGUI Application |
 
 ## Glossary
 
@@ -40,6 +41,7 @@ generated_from: e3f0c14820027fd1e201d5926847fb3628ef4392
 |----------------------|-------|------|
 | Workspace and Realtime Canvas Initialization (SPEC-0001) | docs/specs/SPEC-0001.md | spec |
 | Realtime collaborative card operations (SPEC-0002) | docs/specs/SPEC-0002.md | spec |
+| Irreversible session closure and finalized quadrant retrieval (SPEC-0003) | docs/specs/SPEC-0003.md | spec |
 | Use UUIDv4 for Session IDs (ADR-0001) | docs/adrs/ADR-0001.md | ADR |
 | Enforce Feature Name Validation (ADR-0002) | docs/adrs/ADR-0002.md | ADR |
 | Use one server-side push bridge for collaborative views (ADR-0003) | docs/adrs/ADR-0003.md | ADR |
