@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "db-session-lifecycle-enforcement",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0001.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The migration explicitly drops workspaces_status_check without replacing it, contrary to this PBI's requirement that status be constrained to open or closed; setting a default does not enforce that invariant or backfill existing non-open values. The migration test only reapplies the migration to a newly created open workspace, so it does not establish the required initialization of pre-migration records.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
