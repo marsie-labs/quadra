@@ -44,7 +44,7 @@ class _Held:
 
     def __init__(self, name: str, response=None, after_commit: bool = False) -> None:
         self._real = _REAL[name]
-        self._response = response
+        self.response = response
         self._after_commit = after_commit
         self.entered = threading.Event()
         self.release = threading.Event()
@@ -55,7 +55,7 @@ class _Held:
         assert self.release.wait(timeout=30), "held response was never released"
         if self._after_commit:
             return result
-        return self._response(*args) if self._response else self._real(*args, **kwargs)
+        return self.response(*args) if self.response else self._real(*args, **kwargs)
 
 
 def _hold(monkeypatch: pytest.MonkeyPatch, name: str, **options) -> _Held:
@@ -74,6 +74,29 @@ def _record_canvases(monkeypatch: pytest.MonkeyPatch) -> list[Canvas]:
 
     monkeypatch.setattr(quadra_app, "Canvas", _Recorded)
     return canvases
+
+
+def _record_renders(monkeypatch: pytest.MonkeyPatch, canvas: Canvas) -> list[str]:
+    """Quadrant ids the canvas renders from now on."""
+    rendered: list[str] = []
+    render = canvas._render
+
+    def recording_render(quadrant_id: str) -> None:
+        rendered.append(quadrant_id)
+        render(quadrant_id)
+
+    monkeypatch.setattr(canvas, "_render", recording_render)
+    return rendered
+
+
+def _stale_move(card: cards.Card, quadrant_id: str):
+    """A relocate response computed before whatever happened meanwhile."""
+    return lambda *_: replace(card, quadrant_id=quadrant_id, index=3)
+
+
+def _in_quadrant(canvas: Canvas, card_id: str, quadrant_id: str) -> bool:
+    card = canvas._cards.get(card_id)
+    return card is not None and card.quadrant_id == quadrant_id
 
 
 async def _until(condition) -> None:
@@ -146,7 +169,7 @@ async def _remote(
         await _until(lambda: card_id in canvas._cards and canvas._cards[card_id].content == "Theirs")
     elif change == "move":
         await asyncio.to_thread(_REAL["relocate_card"], session_id, card_id, q3, 0)
-        await _until(lambda: card_id in canvas._cards and canvas._cards[card_id].quadrant_id == q3)
+        await _until(lambda: _in_quadrant(canvas, card_id, q3))
     else:
         await asyncio.to_thread(_REAL["soft_delete_card"], session_id, card_id)
         await _until(lambda: card_id in canvas._deleted)
@@ -194,6 +217,8 @@ async def test_held_insert_overlapped_by_a_remote_change(
         (card,) = cards.list_cards(session_id)
 
         expected = await _remote(session_id, canvas, card.id, change, "Fresh")
+        # The newer change cleared the optimistic entry while the response is still held.
+        _assert_authoritative(user, canvas, session_id, card.id, expected)
         await _settle(held, session_id)
         _assert_authoritative(user, canvas, session_id, card.id, expected)
     finally:
@@ -220,6 +245,8 @@ async def test_held_edit_overlapped_by_a_remote_change(
         await _entered(held)
 
         expected = await _remote(session_id, canvas, card.id, change)
+        # The newer change cleared the optimistic entry while the response is still held.
+        _assert_authoritative(user, canvas, session_id, card.id, expected)
         await _settle(held, session_id)
         _assert_authoritative(user, canvas, session_id, card.id, expected)
     finally:
@@ -239,13 +266,15 @@ async def test_held_move_overlapped_by_a_remote_change(
         held = _hold(
             monkeypatch,
             "relocate_card",
-            response=lambda *_: replace(card, quadrant_id=q2, index=3),
+            response=_stale_move(card, q2),
         )
         await _request_move(user, card.id, 1, 3)
         await _entered(held)
         assert _marked(user, f"pending-{card.id}")
 
         expected = await _remote(session_id, canvas, card.id, change)
+        # The newer change cleared the optimistic entry while the response is still held.
+        _assert_authoritative(user, canvas, session_id, card.id, expected)
         await _settle(held, session_id)
         _assert_authoritative(user, canvas, session_id, card.id, expected)
     finally:
@@ -258,35 +287,27 @@ async def test_older_held_move_to_q2_overlapped_by_newer_move_to_q3_ends_only_in
 ):
     session_id = create_session("Overlap Land").session_id
     q2, q3 = _load_quadrant_ids(session_id)[1:3]
+    held = _hold(monkeypatch, "relocate_card")
     canvases = _record_canvases(monkeypatch)
     try:
         canvas, card = await _open_with_card(user, session_id, canvases)
-        held = _hold(
-            monkeypatch,
-            "relocate_card",
-            response=lambda *_: replace(card, quadrant_id=q2, index=3),
-        )
+        held.response = _stale_move(card, q2)
         await _request_move(user, card.id, 1, 3)
         await _entered(held)
         assert _shown(canvas) == {1: ["Original"]}  # pending in Q2
 
         await asyncio.to_thread(_REAL["relocate_card"], session_id, card.id, q3, 0)
-        await _until(lambda: card.id in canvas._cards and canvas._cards[card.id].quadrant_id == q3)
+        await _until(lambda: _in_quadrant(canvas, card.id, q3))
 
-        rendered: list[str] = []
-        render = canvas._render
-
-        def recording_render(quadrant_id: str) -> None:
-            rendered.append(quadrant_id)
-            render(quadrant_id)
-
-        monkeypatch.setattr(canvas, "_render", recording_render)
+        # Realtime already cleared the optimistic move; the held response is still out.
+        assert not canvas._moving
+        assert _shown(canvas) == {2: ["Original"]}
+        rendered = _record_renders(monkeypatch, canvas)
         await _settle(held, session_id)
 
         # The stale response is discarded, but both the cleared target and the
         # authoritative quadrant are rendered again.
         assert {q2, q3} <= set(rendered)
-        assert _shown(canvas) == {2: ["Original"]}  # Q1 and Q2 show no copy
         _assert_authoritative(user, canvas, session_id, card.id, ("Original", 2))
     finally:
         held.release.set()

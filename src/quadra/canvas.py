@@ -240,10 +240,13 @@ class Canvas:
             del self._moving[move.card_id]
         return {move.quadrant_id, move.origin_quadrant_id}
 
-    def _clear_optimistic(self, card_id: str) -> set[str]:
-        """Drop the card's optimistic insert and move; the quadrants they showed it in."""
+    def _clear_optimistic(self, card_id: str, keep_insert: bool = False) -> set[str]:
+        """Drop the card's optimistic insert and move; the quadrants they showed it in.
+
+        `keep_insert` leaves the insert for its own response to resolve.
+        """
         shown: set[str] = set()
-        pending = self._pending.pop(card_id, None)
+        pending = None if keep_insert else self._pending.pop(card_id, None)
         if pending is not None:
             shown.add(pending.quadrant_id)
         move = self._moving.pop(card_id, None)
@@ -426,20 +429,28 @@ class Canvas:
         card = _merged(current, record, self._deleted.get(record.get("id", "")))
         if card is None:
             return set()
-        # Authoritative state replaces the card's optimistic move, and every quadrant it
-        # showed the card in is rerendered. An unconfirmed insert stays until its own
-        # response resolves, but is no longer shown once the card is in the cards.
+        # Authoritative state replaces every optimistic entry of the card (insert, move,
+        # edit), and each quadrant that showed the card is rerendered by the caller.
         affected = {card.quadrant_id} | self._shown_in(card.id, current)
-        if card.deleted_at is None:
-            self._moving.pop(card.id, None)
-            self._cards[card.id] = card
-        else:
-            self._clear_optimistic(card.id)
-            self._cards.pop(card.id, None)
+        # A replay of what is already held (a response after its own push) is no news,
+        # and must not clear what the participant started since. The first sight of a
+        # card is the push of its own insert: that insert's response resolves its
+        # pending entry (it is no longer shown once the card is in the cards), while
+        # any newer change clears it.
+        if current is None or _instant(card.updated_at) > _instant(current.updated_at):
+            self._clear_optimistic(card.id, keep_insert=current is None and not card.deleted_at)
             self._drafts.pop(card.id, None)
-            # Never older than a version retained before: older records are stale.
-            self._deleted[card.id] = _deletion_version(card)
+        self._store(card)
         return affected
+
+    def _store(self, card: Card) -> None:
+        """Keep an active card in the cards; drop a deleted one, retaining its version."""
+        if card.deleted_at is None:
+            self._cards[card.id] = card
+            return
+        self._cards.pop(card.id, None)
+        # Never older than a version retained before: older records are stale.
+        self._deleted[card.id] = _deletion_version(card)
 
     def _shown_in(self, card_id: str, current: Card | None) -> set[str]:
         """The quadrants showing the card now: its own, its pending insert, its move."""
