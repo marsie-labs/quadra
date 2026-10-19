@@ -4,11 +4,14 @@
 -- check follows the closure commit is rejected, however early its request started.
 -- Idempotent: safe to apply any number of times.
 
--- A session is open unless closed; a session created without a status is open, and so is
--- every existing row (0001 already defaulted it to 'open'). Only closed is ever final, so
--- no value check is added: the lifecycle trigger below is what makes closure irreversible.
+-- A session is open or closed; a session created without a status is open. Every existing
+-- row that is not closed is initialized to open before the constraint is enforced, so
+-- re-applying this migration never reopens a closed session.
 alter table public.workspaces alter column status set default 'open';
+update public.workspaces set status = 'open' where status is distinct from 'closed' and status is distinct from 'open';
 alter table public.workspaces drop constraint if exists workspaces_status_check;
+alter table public.workspaces
+    add constraint workspaces_status_check check (status in ('open', 'closed'));
 
 -- Closed is final: a closed session can be neither reopened nor deleted.
 create or replace function public.workspaces_protect_closed() returns trigger

@@ -191,6 +191,30 @@ def _migration_leaves_state_unchanged() -> None:
     assert _status(inserted) == "open"
 
 
+def _migration_initializes_legacy_rows_and_constrains_status() -> None:
+    """A row from before the migration with any other status becomes open; closed is kept."""
+    assert _reader is not None
+    closed = _new_workspace().session_id
+    _close(closed)
+    legacy = str(uuid.uuid4())
+    # Recreate the pre-migration schema: no status constraint, a free-form status.
+    _reader.execute("alter table public.workspaces drop constraint if exists workspaces_status_check")
+    _reader.execute(
+        "insert into public.workspaces (id, feature_name, status) values (%s, 'Legacy', 'pending')",
+        (legacy,),
+    )
+    _reader.execute(MIGRATION.read_text())
+    assert (_status(legacy), _status(closed)) == ("open", "closed")
+
+    # From now on only open and closed are accepted.
+    with pytest.raises(psycopg.errors.CheckViolation):
+        _reader.execute(
+            "insert into public.workspaces (id, feature_name, status) "
+            "values (%s, 'Invalid', 'archived')",
+            (str(uuid.uuid4()),),
+        )
+
+
 def _closure_is_idempotent(workspace: Workspace) -> None:
     session_id = workspace.session_id
     unknown = _close(str(uuid.uuid4()))  # unknown session: nothing to close
@@ -365,6 +389,7 @@ def _mutation_wins_the_lock(name: str) -> None:
 
 def test_database_lifecycle_boundary():
     _migration_leaves_state_unchanged()
+    _migration_initializes_legacy_rows_and_constrains_status()
 
     workspace = _new_workspace()
     _closure_is_idempotent(workspace)

@@ -28,13 +28,16 @@ def _commit(sql: str, params: tuple) -> float:
     return started
 
 
-async def _commit_status(session_id: str, status: str | None = None) -> tuple[str, float]:
-    """Commit a (unique) status on the session's workspace; return it and the commit time."""
-    status = status or f"status-{uuid.uuid4()}"
+async def _commit_feature_name(session_id: str, name: str | None = None) -> tuple[str, float]:
+    """Commit a (unique) feature name on the session's workspace; return it and the commit time.
+
+    A session's status only ever holds open or closed, so the feature name marks the change.
+    """
+    name = name or f"feature-{uuid.uuid4()}"
     started = await asyncio.to_thread(
-        _commit, "update public.workspaces set status = %s where id = %s", (status, session_id)
+        _commit, "update public.workspaces set feature_name = %s where id = %s", (name, session_id)
     )
-    return status, started
+    return name, started
 
 
 async def _commit_quadrant_position(session_id: str) -> tuple[int, float]:
@@ -147,7 +150,7 @@ def _mount_watch_page(monkeypatch: pytest.MonkeyPatch) -> None:
 
         def render(change: SessionChange) -> None:
             with client:  # the view's own DOM, updated over NiceGUI's WebSocket
-                ui.label(f"{change.table} {change.event} {change.record['status']}")
+                ui.label(f"{change.table} {change.event} {change.record['feature_name']}")
 
         await realtime.register_view(session_id, str(client.id), render)
         client.on_disconnect(lambda: realtime.unregister_view(session_id, str(client.id)))
@@ -183,11 +186,11 @@ async def test_push_delivery_without_polling(
         path: list[str] = []
         polling = _forbid_polling(monkeypatch)
         _record_notifications(monkeypatch, path)
-        status = f"status-{uuid.uuid4()}"
+        status = f"feature-{uuid.uuid4()}"
         delivered = _record_websocket_push(monkeypatch, client_b.id, status, path)
 
         observed = asyncio.create_task(_observe_in_dom(user_b, f"workspaces UPDATE {status}"))
-        started = (await _commit_status(session_id, status))[1]
+        started = (await _commit_feature_name(session_id, status))[1]
         rendered_at = await asyncio.wait_for(observed, timeout=10)
         await _next_change(delivered)
 
@@ -209,7 +212,7 @@ def _assert_update(received: list[SessionChange], table: str, session_id: str, c
 
 
 COMMITS = {
-    "workspaces": (_commit_status, "status"),
+    "workspaces": (_commit_feature_name, "feature_name"),
     "quadrants": (_commit_quadrant_position, "position"),
 }
 
@@ -240,13 +243,13 @@ async def test_changes_are_dispatched_only_to_views_of_their_session(register):
     await register(session_one, "a", seen_one.append)
     await register(session_two, "b", seen_two.append)
 
-    status_one, _ = await _commit_status(session_one)
+    status_one, _ = await _commit_feature_name(session_one)
     await _next_change(seen_one)
-    status_two, _ = await _commit_status(session_two)
+    status_two, _ = await _commit_feature_name(session_two)
     await _next_change(seen_two)  # arrives after session one's change on the same socket
 
-    assert [c.record["status"] for c in seen_one] == [status_one]
-    assert [c.record["status"] for c in seen_two] == [status_two]
+    assert [c.record["feature_name"] for c in seen_one] == [status_one]
+    assert [c.record["feature_name"] for c in seen_two] == [status_two]
     assert {c.session_id for c in seen_two} == {session_two}
 
 
@@ -259,7 +262,7 @@ async def test_earlier_views_keep_the_subscription_alive(register):
     assert await realtime.unregister_view(session_id, "first") is False
     assert realtime.is_ready(session_id)
     assert realtime.view_ids(session_id) == {"second"}
-    await _commit_status(session_id)
+    await _commit_feature_name(session_id)
     await _next_change(received)  # the shared subscription still delivers
 
 
