@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 5,
   "rejection_count": 0,
   "pbi_id": "canvas-closure-failure-handling",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0006.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Review rejected the previous attempt. it does not conform to the Constitution: The newly added closure handler calls _set_closed(), which disables controls but neither invalidates outstanding asynchronous response generations nor replaces pending optimistic overlays with a complete authoritative snapshot. This falls short of cited ADR-0006's required reconciliation on closure, leaving pending operations and stale responses able to alter the closed canvas.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
