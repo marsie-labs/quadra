@@ -1,0 +1,17 @@
+[
+  {
+    "artifact_id": "DG-0003",
+    "stage": "DISCOVER",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "human-signoff",
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": {
+      "human-signoff": ""
+    }
+  }
+]

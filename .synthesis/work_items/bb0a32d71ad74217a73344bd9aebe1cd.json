@@ -35,8 +35,43 @@
   "rejection_count": 0,
   "pbi_id": null,
   "child_ids": [],
-  "artifact_paths": {},
-  "pending_artifacts": {},
+  "artifact_paths": {
+    "DISCOVER": "docs/discovery/DG-0003.md"
+  },
+  "pending_artifacts": {
+    "DISCOVER": {
+      "graph_type": "opportunity",
+      "signals": [
+        {
+          "identity": "session-closure-workflow",
+          "text": "Participants need a way to lock a workspace and finalize results.",
+          "consequence_of": null,
+          "possible_indication": null
+        },
+        {
+          "identity": "agent-retrieval-mechanism",
+          "text": "External agents need a secure mechanism to retrieve session data only after closure, with enforcement of status checks.",
+          "consequence_of": "session-closure-workflow",
+          "possible_indication": "Ensures data consistency by preventing access to incomplete sessions."
+        }
+      ],
+      "core_issue": "Participants need a way to conclude a collaborative session, and external agents require a secure, restricted mechanism to retrieve finalized session data.",
+      "impact_value": "Enables formal session closure, prevents premature data retrieval, and integrates quadra results into external workflows.",
+      "discovery_method": "Analysis of project requirements for session lifecycle management and data accessibility.",
+      "pattern_dependencies": "The session status transition is the gating mechanism for the secure retrieval of session data.",
+      "pattern_narratives": [
+        {
+          "identity": "session-closure-workflow",
+          "applies_to": "Workspace Session Controller",
+          "frequency": "Per-session event",
+          "severity": "Moderate",
+          "confidence": "High",
+          "current_state": "Session status is currently implicitly 'open' and mutable."
+        }
+      ],
+      "questions": []
+    }
+  },
   "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
