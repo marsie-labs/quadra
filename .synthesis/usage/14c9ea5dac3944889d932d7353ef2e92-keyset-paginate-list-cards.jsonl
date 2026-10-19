@@ -1,0 +1,1 @@
+{"at": "2026-10-19T11:06:44+00:00", "work_item_id": "14c9ea5dac3944889d932d7353ef2e92-keyset-paginate-list-cards", "stage": "ASSEMBLE", "pbi_id": "keyset-paginate-list-cards", "model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 5, "input_tokens": 74960, "output_tokens": 2564, "cache_read_tokens": 56847, "cache_write_tokens": 18101}
