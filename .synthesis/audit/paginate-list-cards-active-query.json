@@ -1,0 +1,15 @@
+[
+  {
+    "artifact_id": "paginate-list-cards-active-query",
+    "stage": "ASSEMBLE",
+    "passed": true,
+    "policy": "agent",
+    "approver": null,
+    "rejection_reason": null,
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": null
+  }
+]
