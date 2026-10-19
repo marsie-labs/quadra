@@ -51,7 +51,8 @@
     "14c9ea5dac3944889d932d7353ef2e92-suppress-pending-render-of-soft-deleted-card",
     "14c9ea5dac3944889d932d7353ef2e92-reconcile-pending-move-on-remote-delete",
     "14c9ea5dac3944889d932d7353ef2e92-reconcile-overlapping-card-operations",
-    "14c9ea5dac3944889d932d7353ef2e92-cards-clock-timestamp-migration-0004"
+    "14c9ea5dac3944889d932d7353ef2e92-cards-clock-timestamp-migration-0004",
+    "14c9ea5dac3944889d932d7353ef2e92-paginate-list-cards-active-query"
   ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0002.md",
@@ -59,7 +60,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. src/quadra/cards.py::list_cards performs one unpaginated Supabase query and sorts only the returned rows, so sessions exceeding Supabase's response row limit silently lose active cards from the loaded canvas. The Contract requires loading persisted non-deleted cards and specifies no card-count limit. The Definition-of-Done item requiring an existing session to load its persisted, non-deleted cards is not fully realized: list_cards does not retrieve subsequent result pages, and Canvas._load relies entirely on that incomplete snapshot. Cards omitted from the snapshot remain invisible unless they subsequently receive a Realtime change. This is a persistence-loading implementation gap, not an incorrect or infeasible Contract requirement. Paginate the session-scoped active-card query with deterministic ordering while retaining the existing subscription-before-snapshot reconciliation.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {
