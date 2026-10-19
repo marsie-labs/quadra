@@ -18,6 +18,35 @@ class Session:
     quadrants: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class FinalizedCard:
+    id: str
+    content: str
+    author_display_name: str
+    index: int
+    created_at: str
+    updated_at: str
+
+
+@dataclass(frozen=True)
+class FinalizedQuadrant:
+    id: str
+    name: str
+    position: int
+    cards: tuple[FinalizedCard, ...]
+
+
+@dataclass(frozen=True)
+class FinalizedSession:
+    session_id: str
+    status: str
+    quadrants: tuple[FinalizedQuadrant, ...]
+
+
+class SessionStillOpenError(Exception):
+    """The session exists but is not closed, so it has no finalized data yet."""
+
+
 def get_client() -> Client:
     """Build a Supabase client from SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY."""
     return create_client(
@@ -89,6 +118,76 @@ def close_session(session_id: str, client: Client | None = None) -> str | None:
     """
     client = client or get_client()
     return client.rpc("close_session", {"p_session_id": session_id}).execute().data
+
+
+def get_finalized_session_data(
+    session_id: str, client: Client | None = None
+) -> FinalizedSession | None:
+    """Every non-deleted card of a closed session, grouped by its four quadrants.
+
+    None means the session does not exist; SessionStillOpenError that it is open.
+    Quadrants come in canvas order, cards in the deterministic list_cards order.
+    """
+    from quadra import cards  # cards imports get_client from this module
+
+    from quadra.cards import list_cards  # cards imports get_client from this module
+
+    client = client or get_client()
+    status = get_session_status(session_id, client)
+    if status is None:
+        return None
+    if status != "closed":
+        raise SessionStillOpenError(session_id)
+
+    quadrants = _load_quadrants(session_id, client)
+    return FinalizedSession(
+        session_id=session_id,
+        status=status,
+        quadrants=_group_cards(quadrants, list_cards(session_id, client)),
+    )
+
+
+def _group_cards(quadrants: list[dict], stored_cards) -> tuple[FinalizedQuadrant, ...]:
+    """Place cards (already in list order) into their quadrants, keeping empty ones."""
+    by_quadrant: dict[str, list[FinalizedCard]] = {q["id"]: [] for q in quadrants}
+    for card in stored_cards:
+        by_quadrant[card.quadrant_id].append(_to_finalized_card(card))
+    return tuple(
+        FinalizedQuadrant(
+            id=q["id"],
+            name=q["name"],
+            position=q["position"],
+            cards=tuple(by_quadrant[q["id"]]),
+        )
+        for q in quadrants
+    )
+
+
+def _load_quadrants(session_id: str, client: Client) -> list[dict]:
+    """The session's quadrants (id, name, position) in canvas order."""
+    canvases = (
+        client.table("canvases")
+        .select("quadrants(id, name, position)")
+        .eq("workspace_id", session_id)
+        .execute()
+        .data
+    )
+    return sorted(
+        (q for canvas in canvases for q in canvas["quadrants"]),
+        key=lambda quadrant: quadrant["position"],
+    )
+
+
+def _to_finalized_card(card) -> FinalizedCard:
+    """Map a stored card to its finalized, API-facing shape."""
+    return FinalizedCard(
+        id=card.id,
+        content=card.content,
+        author_display_name=card.creator_display_name,
+        index=card.index,
+        created_at=card.created_at,
+        updated_at=card.updated_at,
+    )
 
 
 def _to_session(workspace: dict) -> Session:
