@@ -1,0 +1,1 @@
+{"at": "2026-10-19T17:11:40+00:00", "work_item_id": "bb0a32d71ad74217a73344bd9aebe1cd-close-session-service", "stage": "ASSEMBLE", "pbi_id": "close-session-service", "model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 10, "input_tokens": 250322, "output_tokens": 4267, "cache_read_tokens": 215029, "cache_write_tokens": 35271}
