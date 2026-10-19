@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 5,
   "rejection_count": 0,
   "pbi_id": "reconcile-overlapping-card-operations",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0016.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The PBI explicitly requires every Realtime fold to clear the card's optimistic entry, but `_fold` calls `_clear_optimistic(..., keep_insert=True)` when first receiving an active inserted card, deliberately retaining `_pending` until its response arrives. The new insert-overlap tests check cleanup only after a subsequent remote change, leaving this required first-confirmation cleanup uncovered.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
