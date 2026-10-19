@@ -1,0 +1,1 @@
+{"at": "2026-10-19T02:25:28+00:00", "work_item_id": "14c9ea5dac3944889d932d7353ef2e92-cards-clock-timestamp-migration-0004", "stage": "ASSEMBLE", "pbi_id": "cards-clock-timestamp-migration-0004", "model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 15, "input_tokens": 459683, "output_tokens": 8321, "cache_read_tokens": 421499, "cache_write_tokens": 38152}
