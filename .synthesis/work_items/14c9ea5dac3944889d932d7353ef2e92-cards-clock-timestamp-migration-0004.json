@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 5,
   "rejection_count": 0,
   "pbi_id": "cards-clock-timestamp-migration-0004",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0002/PBI-0017.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The migration implements the requested clock_timestamp() stamping, but _commit_and_wait starts its latency clock only after the commit worker returns, excluding any delay between database commit and coroutine resumption rather than measuring the required commit-to-page interval. The double-soft-delete test also waits for an absence already established by T2, so it can pass without observing T1's notification or canvas update.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
