@@ -1,0 +1,23 @@
+[
+  {
+    "artifact_id": "STRAT-0003",
+    "stage": "DEFINE",
+    "passed": false,
+    "policy": null,
+    "approver": null,
+    "rejection_reason": "human-signoff",
+    "constitution_version": null,
+    "quiz_questions": [
+      "Why does the strategy explicitly reject allowing a workspace session to be re-opened after it has been closed?",
+      "If an in-flight card mutation occurs simultaneously with a session status change to 'closed', how does the current strategy address this, and what is the primary risk it is trying to avoid?"
+    ],
+    "quiz_answers": [
+      "It would jeopardize the immutability guarantee required by external agents for reliable integration.",
+      "this could render a race-condition, the mitigiation is checking the session's status name."
+    ],
+    "quiz_justification": "missed: If an in-flight card mutation occurs simultaneously with a session status change to 'closed', how does the current strategy address this, and what is the primary risk it is trying to avoid?",
+    "failed_checks": {
+      "human-signoff": ""
+    }
+  }
+]
