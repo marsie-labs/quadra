@@ -73,6 +73,24 @@ def get_session(session_id: str, client: Client | None = None) -> Session | None
     return _to_session(rows[0]) if rows else None
 
 
+def get_session_status(session_id: str, client: Client | None = None) -> str | None:
+    """Lifecycle state ("open" or "closed") of a session; None when it does not exist."""
+    client = client or get_client()
+    rows = (
+        client.table("workspaces").select("status").eq("id", session_id).execute().data
+    )
+    return rows[0]["status"] if rows else None
+
+
+def close_session(session_id: str, client: Client | None = None) -> str | None:
+    """Irreversibly close a session; return "closed" (also when it already was).
+
+    None means the session does not exist. The database owns the transition.
+    """
+    client = client or get_client()
+    return client.rpc("close_session", {"p_session_id": session_id}).execute().data
+
+
 def _to_session(workspace: dict) -> Session:
     """Map a workspace row with nested canvases/quadrants to a Session."""
     quadrants = sorted(
