@@ -1,0 +1,1 @@
+{"at": "2026-10-19T20:48:57+00:00", "work_item_id": "bb0a32d71ad74217a73344bd9aebe1cd-canvas-close-control", "stage": "ASSEMBLE", "pbi_id": "canvas-close-control", "model": "openrouter:anthropic/claude-sonnet-5.5", "requests": 17, "input_tokens": 571455, "output_tokens": 7734, "cache_read_tokens": 527143, "cache_write_tokens": 44276}
