@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 1,
+  "current_index": 2,
   "rejection_count": 0,
   "pbi_id": null,
   "child_ids": [],
@@ -39,100 +39,7 @@
     "DISCOVER": "docs/discovery/DG-0003.md",
     "DEFINE": "docs/strategy/STRAT-0003.md"
   },
-  "pending_artifacts": {
-    "DEFINE": {
-      "core_strategy": "Enforce a lifecycle state machine on the workspace: transitions an 'open' session to 'closed' which immutably freezes card operations and unlocks a read-only data extraction interface.",
-      "names_mechanism": false,
-      "rejected_alternatives": [
-        {
-          "direction": "Permit session deletion after closure.",
-          "tradeoff": "Increases complexity of data retention policies and risks accidental loss of finalized decision data."
-        },
-        {
-          "direction": "Allow session re-opening after closure.",
-          "tradeoff": "Breaks the immutability guarantee required by external agents for reliable integration."
-        }
-      ],
-      "dependencies": [
-        {
-          "description": "Database support for session status updates and retrieval queries.",
-          "owner": "Supabase Team",
-          "status": "available"
-        }
-      ],
-      "assumptions": [
-        {
-          "description": "The session status check is sufficient to secure data retrieval.",
-          "validator": "Integration tests in tests/integration/test_session_closure.py",
-          "how_checked": "Test API endpoint retrieval requests against sessions with status 'open' versus 'closed'.",
-          "if_false": "re-evaluate auth requirements for session retrieval."
-        }
-      ],
-      "risks": [
-        {
-          "description": "Race condition between session closing and an in-flight card mutation.",
-          "likelihood": "low",
-          "impact": "A card could be edited or moved exactly as the session is closed.",
-          "mitigation": "Database transaction locks at the session status check point."
-        }
-      ],
-      "thesis": "The quadra session lifecycle will be extended to a 'closed' state to provide a secure boundary for finalized decision data retrieval by external agents.",
-      "from_problem_graph": "",
-      "goals": [
-        {
-          "description": "Implement formal session closure workflow.",
-          "why": "Participants need to finalize decisions and lock workspaces.",
-          "success_metric": "100% of 'closed' sessions successfully block further card mutations.",
-          "owner": "Lead Developer"
-        },
-        {
-          "description": "Enable secure, restricted retrieval of finalized session data.",
-          "why": "External agents require finalized results without data leakage during active sessions.",
-          "success_metric": "100% of retrieval requests for 'open' sessions return 409 Conflict.",
-          "owner": "Lead Developer"
-        }
-      ],
-      "success_criteria": [
-        {
-          "criterion": "Mutations to a 'closed' session are rejected.",
-          "measurement": "Integration tests running against the session service.",
-          "target": "0% successful mutations after closure.",
-          "baseline": "Session status field is ignored by the system.",
-          "cadence": "Every build"
-        }
-      ],
-      "non_goals": [
-        {
-          "description": "Building a user-facing dashboard for browsing closed sessions.",
-          "tradeoff": "This feature is outside the scope of quadra's role as an ephemeral workspace orchestrator."
-        }
-      ],
-      "in_scope": [
-        "session-service",
-        "collaborative-canvas",
-        "card-service"
-      ],
-      "out_of_scope": [
-        "Intent 4 (Markdown export)"
-      ],
-      "walkthrough": [
-        {
-          "name": "Closing an active session",
-          "today": [
-            "Session remains 'open' indefinitely.",
-            "Participants continue editing cards."
-          ],
-          "with_strategy": [
-            "Facilitator triggers 'Close' in the UI.",
-            "Session status updates to 'closed' in database.",
-            "Canvas disables card editing tools for all participants.",
-            "API retrieval now succeeds for external agents."
-          ]
-        }
-      ],
-      "path": "docs/strategy/STRAT-0003.md"
-    }
-  },
+  "pending_artifacts": {},
   "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
