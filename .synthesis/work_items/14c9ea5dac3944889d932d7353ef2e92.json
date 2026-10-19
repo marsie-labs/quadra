@@ -59,7 +59,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done, end-to-end) and rerouted to PBI_PLANNING. In src/quadra/cards.py, list_cards performs one unpaginated Supabase select, so sessions exceeding the configured PostgREST row limit (1000 by default) load only a subset of their active cards. Sorting that subset locally does not realize the Contract's complete, deterministic persisted-card loading requirement. The Definition of Done requires opening a session to load its persisted, non-deleted cards, but Canvas._load relies on the truncated list_cards result and never fetches subsequent pages. Existing cards omitted from that snapshot remain absent unless they subsequently receive a change notification. This is a code gap: the Contract already requires loading persisted active cards and does not impose a maximum card count per session. Paginating the initial session-scoped read can satisfy it without polling or amending the Contract.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {
