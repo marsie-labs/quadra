@@ -13,5 +13,18 @@
     "failed_checks": {
       "human-signoff": ""
     }
+  },
+  {
+    "artifact_id": "DG-0003",
+    "stage": "DISCOVER",
+    "passed": true,
+    "policy": "agent; human",
+    "approver": null,
+    "rejection_reason": null,
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": null
   }
 ]
