@@ -52,7 +52,8 @@
     "14c9ea5dac3944889d932d7353ef2e92-reconcile-pending-move-on-remote-delete",
     "14c9ea5dac3944889d932d7353ef2e92-reconcile-overlapping-card-operations",
     "14c9ea5dac3944889d932d7353ef2e92-cards-clock-timestamp-migration-0004",
-    "14c9ea5dac3944889d932d7353ef2e92-paginate-list-cards-active-query"
+    "14c9ea5dac3944889d932d7353ef2e92-paginate-list-cards-active-query",
+    "14c9ea5dac3944889d932d7353ef2e92-keyset-paginate-list-cards"
   ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0002.md",
@@ -60,7 +61,7 @@
     "SPEC": "docs/specs/SPEC-0002.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. In cards.py, list_cards uses offset-based .range() pagination over separate active-card queries: if a card from an earlier page is soft-deleted between queries, subsequent offsets skip an unchanged active card. Canvas._show only replays notifications, so the deletion notification cannot recover that skipped card, violating the Contract's loss-free subscription-before-snapshot loading requirement. The requirement to load persisted, non-deleted cards is not genuinely satisfied under concurrent soft-deletion during paginated loading: an active card can be omitted indefinitely from the opening canvas. The added pagination tests cover static datasets, not this shifting-page case. The Contract already correctly requires loading persisted active cards and reconciling changes during loading without loss. This is a code-level pagination/reconciliation gap requiring an integration PBI, not a change to the Contract.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {

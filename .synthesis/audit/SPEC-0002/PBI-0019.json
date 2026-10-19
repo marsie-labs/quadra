@@ -1,0 +1,15 @@
+[
+  {
+    "artifact_id": "SPEC-0002/PBI-0019",
+    "stage": "PBI_PLANNING",
+    "passed": true,
+    "policy": "agent",
+    "approver": null,
+    "rejection_reason": null,
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": null
+  }
+]
