@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 4,
+  "current_index": 5,
   "rejection_count": 0,
   "pbi_id": "canvas-closure-failure-handling",
   "child_ids": [],
