@@ -1,0 +1,105 @@
+{
+  "version": "1.0.0",
+  "id": "61f39250-7794-4687-83ab-e8141ade9758",
+  "timestamp": "2026-10-17T15:37:22Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/cards.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 215,
+              "content_hash": "sha256:cd865aeffdcde59007b69e0ab02eee63c21860cef9aa281d2a5c5f2b6e50b074"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "supabase/migrations/0003_cards.sql",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 92,
+              "content_hash": "sha256:39d5075de46fe63497d81937880dfe25ded3b6bd868b61f281a1640852dd77e9"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/features/enforce_authoritative_session_scoped_card_persistence.feature",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 6,
+              "content_hash": "sha256:f83751cfef0a22dab5c7a1bb57de6a460f44783418a98b68411c3570379ff070"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_cards_supabase.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 207,
+              "content_hash": "sha256:c9e32559d5c3da5f1f6e3ee4ecab88d08a9f9f2cf087e2a2f036a89b1dc81800"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/step_defs/test_enforce_authoritative_session_scoped_card_persistence.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 47,
+              "content_hash": "sha256:07fac896748635c1740796142d224f5a430ac1ef440707b22e5ff3c379e06430"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0002",
+    "rev": 1,
+    "base_revision": "5a8a2664418700ae7dcf9c2e375d96796ba6fe28"
+  }
+}

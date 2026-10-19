@@ -1,7 +1,7 @@
 ---
 artifact_type: architecture
 id: ARCH-0001
-version: 1.1
+version: 1.2
 status: Approved
 ---
 
@@ -48,8 +48,9 @@ classDef changed fill:#fff3b0,stroke:#b59f00
 classDef removed fill:#f8c8c8,stroke:#c62828
 quadra_system["Quadra System<br/>system"]
 supabase["Supabase<br/>system"]
-quadra_system -->|Persists session/quadrant data and triggers Realtime broadcasts.| supabase
-supabase -->|Pushes Realtime change events on sessions and quadrants; quadra-app forwards them to browsers over NiceGUI's WebSocket.| quadra_system
+quadra_system -->|"Persists session/quadrant data and triggers Realtime broadcasts."| supabase
+quadra_system -->|"Reads and writes session-scoped card records using supabase-py; committed mutations are the source of Realtime events."| supabase
+supabase -->|"Pushes committed card changes and existing session/quadrant change events over asynchronous Supabase Realtime subscriptions, without polling."| quadra_system
 ```
 
 ### Container
@@ -63,8 +64,9 @@ subgraph quadra_system["Quadra System"]
   quadra_app["NiceGUI Application<br/>container"]
 end
 supabase["Supabase<br/>system"]
-quadra_app -->|Persists session/quadrant data and triggers Realtime broadcasts.| supabase
-supabase -->|Pushes Realtime change events on sessions and quadrants; quadra-app forwards them to browsers over NiceGUI's WebSocket.| quadra_app
+quadra_app -->|"Persists session/quadrant data and triggers Realtime broadcasts."| supabase
+quadra_app -->|"Reads and writes session-scoped card records using supabase-py; committed mutations are the source of Realtime events."| supabase
+supabase -->|"Pushes committed card changes and existing session/quadrant change events over asynchronous Supabase Realtime subscriptions, without polling."| quadra_app
 ```
 
 ### Component: NiceGUI Application
@@ -76,9 +78,17 @@ classDef changed fill:#fff3b0,stroke:#b59f00
 classDef removed fill:#f8c8c8,stroke:#c62828
 subgraph quadra_app["NiceGUI Application"]
   session_service["Session Management Service<br/>component"]
+  card_service["Card Service<br/>component"]
+  realtime_service["Realtime Synchronization Service<br/>component"]
+  collaborative_canvas["Collaborative Canvas<br/>component"]
 end
 supabase["Supabase<br/>system"]
-session_service -->|Persists session/quadrant data and triggers Realtime broadcasts.| supabase
+session_service -->|"Persists session/quadrant data and triggers Realtime broadcasts."| supabase
+collaborative_canvas -->|"Calls in-process to load session cards and request insert, update, soft-delete and relocation operations."| card_service
+card_service -->|"Reads and writes session-scoped card records using supabase-py; committed mutations are the source of Realtime events."| supabase
+collaborative_canvas -->|"Registers and unregisters connected session views for push delivery as clients connect and disconnect."| realtime_service
+supabase -->|"Pushes committed card changes and existing session/quadrant change events over asynchronous Supabase Realtime subscriptions, without polling."| realtime_service
+realtime_service -->|"Dispatches session-scoped database changes in-process; the canvas updates connected browsers through NiceGUI's WebSocket without polling."| collaborative_canvas
 ```
 
 | ID | Unit | Level | Parent | Owns | Does NOT own | Deployment | Tech Family |
@@ -87,6 +97,9 @@ session_service -->|Persists session/quadrant data and triggers Realtime broadca
 | quadra-app | NiceGUI Application | container | quadra-system |  |  |  | FastAPI, NiceGUI, Python |
 | session-service | Session Management Service | component | quadra-app |  |  |  | Python module, supabase-py |
 | supabase | Supabase | system |  | PostgreSQL storage and Realtime sync engine. |  |  |  |
+| card-service | Card Service | component | quadra-app | Loads session-scoped cards and persists insert, update, soft-delete and quadrant relocation operations, including ordering, anonymous display-name authorship and timestamps. | User authentication, durable browser-side state or delivery of Realtime events to connected clients. |  | Python module, supabase-py |
+| realtime-service | Realtime Synchronization Service | component | quadra-app | Maintains asynchronous Supabase Realtime subscriptions within the NiceGUI event loop, routes database change notifications to connected views of the affected session, and manages subscription lifecycle and cleanup. | Card persistence, cursor tracking or a separate WebSocket gateway. |  | Python, supabase-py async Realtime API |
+| collaborative-canvas | Collaborative Canvas | component | quadra-app | Renders session cards, captures anonymous display names and card operations, provides optimistic or quick-confirm feedback for the initiating participant, and applies confirmed changes to connected browser views through NiceGUI. | Authoritative card storage, user accounts or direct browser subscriptions to Supabase. |  | Python, NiceGUI |
 
 ## 9. Communication Patterns
 
@@ -94,7 +107,11 @@ session_service -->|Persists session/quadrant data and triggers Realtime broadca
 |------|----|-------------|
 | quadra-app | session-service | Calls create_session in-process to handle POST /sessions. |
 | session-service | supabase | Persists session/quadrant data and triggers Realtime broadcasts. |
-| supabase | quadra-app | Pushes Realtime change events on sessions and quadrants; quadra-app forwards them to browsers over NiceGUI's WebSocket. |
+| collaborative-canvas | card-service | Calls in-process to load session cards and request insert, update, soft-delete and relocation operations. |
+| card-service | supabase | Reads and writes session-scoped card records using supabase-py; committed mutations are the source of Realtime events. |
+| collaborative-canvas | realtime-service | Registers and unregisters connected session views for push delivery as clients connect and disconnect. |
+| supabase | realtime-service | Pushes committed card changes and existing session/quadrant change events over asynchronous Supabase Realtime subscriptions, without polling. |
+| realtime-service | collaborative-canvas | Dispatches session-scoped database changes in-process; the canvas updates connected browsers through NiceGUI's WebSocket without polling. |
 
 ## 10. Data Architecture
 
@@ -130,3 +147,4 @@ Realtime push is deferred. SPEC-0001 describes Supabase Realtime events pushed t
 |---------|------|---------|--------------|
 | 1.0 | 2026-10-16 | (no summary) | SPEC-0001 |
 | 1.1 | 2026-10-16 | Record the deferral of Realtime push as an open risk | SPEC-0001 PBI review |
+| 1.2 | 2026-10-17 | Add card persistence and an asynchronous Supabase-to-NiceGUI event bridge, with explicit cross-client push acceptance criteria under 2000ms. | SPEC-0002 |

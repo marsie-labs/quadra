@@ -3,7 +3,7 @@ artifact_type: context map
 id: CTXMAP-quadra
 scope: project
 status: Generated
-generated_from: b998d66d793b49da147662c959e8d74ba22a7f65
+generated_from: 07fdcfa92434e57cf9edcc56b7e6660c423d6a38
 ---
 
 # Context Map: quadra
@@ -23,7 +23,10 @@ generated_from: b998d66d793b49da147662c959e8d74ba22a7f65
 | Quadra System (quadra-system) | system | docs/architecture.md#8-system-decomposition |  |
 | NiceGUI Application (quadra-app) | container | docs/architecture.md#8-system-decomposition | Session Management Service |
 | Session Management Service (session-service) | component | docs/architecture.md#8-system-decomposition | Supabase |
-| Supabase (supabase) | system | docs/architecture.md#8-system-decomposition | NiceGUI Application |
+| Supabase (supabase) | system | docs/architecture.md#8-system-decomposition | Realtime Synchronization Service |
+| Card Service (card-service) | component | docs/architecture.md#8-system-decomposition | Supabase |
+| Realtime Synchronization Service (realtime-service) | component | docs/architecture.md#8-system-decomposition | Collaborative Canvas |
+| Collaborative Canvas (collaborative-canvas) | component | docs/architecture.md#8-system-decomposition | Card Service, Realtime Synchronization Service |
 
 ## Glossary
 
@@ -36,8 +39,11 @@ generated_from: b998d66d793b49da147662c959e8d74ba22a7f65
 | If the work concerns | Go to | Kind |
 |----------------------|-------|------|
 | Workspace and Realtime Canvas Initialization (SPEC-0001) | docs/specs/SPEC-0001.md | spec |
+| Realtime collaborative card operations (SPEC-0002) | docs/specs/SPEC-0002.md | spec |
 | Use UUIDv4 for Session IDs (ADR-0001) | docs/adrs/ADR-0001.md | ADR |
 | Enforce Feature Name Validation (ADR-0002) | docs/adrs/ADR-0002.md | ADR |
+| Use one server-side push bridge for collaborative views (ADR-0003) | docs/adrs/ADR-0003.md | ADR |
+| Persist authoritative session-scoped cards with soft deletion (ADR-0004) | docs/adrs/ADR-0004.md | ADR |
 | Architecture (ARCH-0001) | docs/architecture.md | architecture |
 
 ## Validation Checklist

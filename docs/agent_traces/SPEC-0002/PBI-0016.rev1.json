@@ -1,0 +1,106 @@
+{
+  "version": "1.0.0",
+  "id": "0728f9f1-dbd0-4020-92e3-754182e99ab5",
+  "timestamp": "2026-10-18T20:53:59Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/canvas.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 162,
+              "end_line": 162,
+              "content_hash": "sha256:28953a03d7102adc160ea83b5b846e146b52ed958daef2b695ea7f033d03d31c"
+            },
+            {
+              "start_line": 197,
+              "end_line": 197,
+              "content_hash": "sha256:176d6e18a29252b30241b822b99b62f8dd824d9ee5673691bbb6ebd6bf5f396c"
+            },
+            {
+              "start_line": 210,
+              "end_line": 210,
+              "content_hash": "sha256:76df520933080f9f2ccaba6450344984f80f0b3bcd68a21c5a85b778461d8484"
+            },
+            {
+              "start_line": 212,
+              "end_line": 212,
+              "content_hash": "sha256:7fe20fa0943c59d70bc87895553c237580af764d0322e5ad6ff739c15af3cd8a"
+            },
+            {
+              "start_line": 214,
+              "end_line": 214,
+              "content_hash": "sha256:968938fc6d1f0585f12c8e6fce128ea2f4e8907ab9c2ad042d2f939041bec5f0"
+            },
+            {
+              "start_line": 237,
+              "end_line": 265,
+              "content_hash": "sha256:4e7e6b4995609b9168d66c0c2e092e53552980781631980bc8a56d4ac4c720cd"
+            },
+            {
+              "start_line": 267,
+              "end_line": 268,
+              "content_hash": "sha256:8e868a54b51a4b045a1be66628fa5baad5f2f2b1502a0fd119865d7e6fff12cc"
+            },
+            {
+              "start_line": 326,
+              "end_line": 326,
+              "content_hash": "sha256:6be4a4e9cc4063994f632d07329bc1d4b0c905ca26c82f65a9c2759092782e85"
+            },
+            {
+              "start_line": 429,
+              "end_line": 432,
+              "content_hash": "sha256:3409e748d0bc665e52721629b1341a4ce4cc4d41dd6c1f65ca8b9064996ba07a"
+            },
+            {
+              "start_line": 434,
+              "end_line": 434,
+              "content_hash": "sha256:f5562e0c3f09176043b9250a05733b47375c1c9ea2f7029f9778c375fab9f1e7"
+            },
+            {
+              "start_line": 437,
+              "end_line": 437,
+              "content_hash": "sha256:3c653a59492e42797d938901b10af9bc913d1d262fcfcf2c062f99298ec1278a"
+            },
+            {
+              "start_line": 444,
+              "end_line": 454,
+              "content_hash": "sha256:bc59fdfb260d7cf3503a3b7d32c62fadefbc7eb4167e81f1e99b6e50e400aacb"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_canvas_overlap.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 293,
+              "content_hash": "sha256:ec1f7914bafd6c596b0cce6f25adedc36de9ea19a42b02dc9f9dbb230f5a9586"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0002/PBI-0016",
+    "rev": 1,
+    "base_revision": "fd90941b777bbd83614d55729ac67a208d808bb6"
+  }
+}
