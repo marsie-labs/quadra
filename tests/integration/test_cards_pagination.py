@@ -60,3 +60,27 @@ def test_list_cards_reads_every_page_in_order_without_duplicates(monkeypatch, co
 
 def test_default_page_size_is_one_thousand():
     assert cards._PAGE_SIZE == 1000
+
+
+def test_list_cards_survives_soft_delete_between_pages(monkeypatch):
+    session_id, expected = _seed_session(5)
+    monkeypatch.setattr(cards, "_PAGE_SIZE", 2)
+    fetch_page = cards._fetch_page
+    pages = []
+
+    def delete_after_first_page(session, after_id, client):
+        page = fetch_page(session, after_id, client)
+        pages.append(page)
+        if len(pages) == 1:
+            cards.soft_delete_card(session_id, page[0]["id"], client)
+        return page
+
+    monkeypatch.setattr(cards, "_fetch_page", delete_after_first_page)
+
+    listed = cards.list_cards(session_id)
+
+    removed = pages[0][0]["content"]
+    contents = [card.content for card in listed]
+    # The page already read may still carry the card deleted afterwards.
+    assert [c for c in contents if c != removed] == [c for c in expected if c != removed]
+    assert len(set(card.id for card in listed)) == len(listed)

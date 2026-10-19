@@ -54,25 +54,28 @@ def list_cards(session_id: str, client: Client | None = None) -> list[Card]:
     client = client or get_client()
     page_size = _PAGE_SIZE
     rows: list[dict] = []
+    after_id = None
     while True:
-        start = len(rows)
-        page = _run(
-            lambda: (
-                client.table("cards")
-                .select(f"{_COLUMNS}, quadrants(position)")
-                .eq("session_id", session_id)
-                .is_("deleted_at", "null")
-                .order("id")
-                .range(start, start + page_size - 1)
-                .execute()
-                .data
-            )
-        )
+        page = _fetch_page(session_id, after_id, client)
         rows.extend(page)
         if len(page) < page_size:
             break
+        after_id = page[-1]["id"]
     rows.sort(key=lambda row: (row["quadrants"]["position"], row["index"], row["id"]))
     return [_to_card(row) for row in rows]
+
+
+def _fetch_page(session_id: str, after_id: str | None, client: Client) -> list[dict]:
+    """One page of non-deleted cards with id above after_id (none: first page)."""
+    query = (
+        client.table("cards")
+        .select(f"{_COLUMNS}, quadrants(position)")
+        .eq("session_id", session_id)
+        .is_("deleted_at", "null")
+    )
+    if after_id is not None:
+        query = query.gt("id", after_id)
+    return _run(lambda: query.order("id").limit(_PAGE_SIZE).execute().data)
 
 
 def insert_card(
