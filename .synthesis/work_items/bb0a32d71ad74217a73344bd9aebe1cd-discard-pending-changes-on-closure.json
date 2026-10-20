@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "discard-pending-changes-on-closure",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0010.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: _Request.committed infers whether an edit or move committed solely from final field equality, which cannot establish the Contract's required commit outcome: a rejected same-value edit can suppress the required warning, while a committed edit overwritten by another participant before closure can trigger a false 'not saved' warning. The new tests cover only mutations whose requested values differ from persisted state, leaving these cases untested.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
