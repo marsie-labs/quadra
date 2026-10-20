@@ -28,17 +28,23 @@ def session_page(user: User):
 
 
 class _Held:
-    """Holds one card operation unresolved until released, then runs the real one."""
+    """Holds one card operation unresolved until released.
 
-    def __init__(self, real) -> None:
+    By default the real operation runs after the release, so it has not committed while
+    held; with `after` it runs first and only its response is held.
+    """
+
+    def __init__(self, real, after: bool = False) -> None:
         self._real = real
+        self._after = after
         self.entered = threading.Event()
         self.release = threading.Event()
 
     def __call__(self, *args, **kwargs):
+        result = self._real(*args, **kwargs) if self._after else None
         self.entered.set()
         assert self.release.wait(timeout=30), "barrier was never released"
-        return self._real(*args, **kwargs)
+        return result if self._after else self._real(*args, **kwargs)
 
 
 async def _until(condition) -> None:
@@ -84,6 +90,12 @@ async def _request_edit(user: User, card: cards.Card) -> None:
     (editor,) = user.find(marker=f"edit-content-{card.id}").elements
     editor.value = "Uncommitted"
     user.find(marker=f"save-{card.id}").click()
+
+
+async def _request_same_edit(user: User, card: cards.Card) -> None:
+    user.find(marker=f"edit-{card.id}").click()
+    await user.should_see(marker=f"save-{card.id}")
+    user.find(marker=f"save-{card.id}").click()  # the editor holds the persisted content
 
 
 async def _request_move(user: User, card: cards.Card) -> None:
@@ -134,17 +146,27 @@ def _assert_read_only(user: User, canvas: Canvas) -> None:
 
 
 @asynccontextmanager
-async def _held_operation(user: User, monkeypatch: pytest.MonkeyPatch, operation: str):
-    """Open the session with `operation` requested and held unresolved and uncommitted.
+async def _held_operation(
+    user: User,
+    monkeypatch: pytest.MonkeyPatch,
+    operation: str,
+    request=None,
+    after: bool = False,
+):
+    """Open the session with `operation` requested and held unresolved.
+
+    It is uncommitted while held, unless `after`: then only its response is held.
+    `request` replaces the way the operation is asked for.
 
     Yields the session id, the persisted card, the canvas and the barrier; on exit the
     barrier is released and the Realtime views are released.
     """
-    function, request = _OPERATIONS[operation]
+    function, default_request = _OPERATIONS[operation]
+    request = request or default_request
     session_id = create_session("Closure Pending").session_id
     q1 = _load_quadrant_ids(session_id)[0]
     card = cards.insert_card(session_id, q1, 0, "Mover", "Alice")
-    held = _Held(getattr(cards, function))
+    held = _Held(getattr(cards, function), after)
     monkeypatch.setattr(cards, function, held)
     canvases = _record_canvases(monkeypatch)
     try:
@@ -168,10 +190,11 @@ async def _close_elsewhere(session_id: str, canvas: Canvas) -> None:
 
 
 def _assert_discarded(user: User, canvas: Canvas, card: cards.Card, generation: int) -> None:
-    """Closure was reconciled and reported while the operation's response is delayed."""
+    """Closure was reconciled while the operation's response is delayed: it is not
+    reported yet, since only that response says whether the database committed it."""
     assert canvas._generation > generation
     assert canvas._requests  # the response is still delayed
-    assert _notice(user).visible and _notice(user).text == _NOT_SAVED
+    assert not _notice(user).visible
     _assert_authoritative_closed_cards(user, canvas, card)
     _assert_read_only(user, canvas)
 
@@ -188,10 +211,10 @@ async def test_closure_discards_the_pending_operation_and_says_it_was_not_saved(
         await _close_elsewhere(session_id, canvas)
         _assert_discarded(user, canvas, card, generation)
 
-        # The delayed response then arrives: closure already decided, nothing changes.
+        # The delayed response then arrives: the database rejected it, so it is reported.
         held.release.set()
         await _until(lambda: not canvas._requests)
-        await asyncio.sleep(0.5)
+        assert _notice(user).visible and _notice(user).text == _NOT_SAVED
         _assert_authoritative_closed_cards(user, canvas, card)
         _assert_read_only(user, canvas)
 
@@ -215,11 +238,11 @@ async def test_not_saved_survives_a_failed_first_reload(
 
         monkeypatch.setattr(canvas, "_load", flaky_load)
         await _close_elsewhere(session_id, canvas)
-        assert not _notice(user).visible
 
         # The rejected response arrives before the reload is retried.
         held.release.set()
         await _until(lambda: not canvas._requests)
+        assert not _notice(user).visible
 
         await canvas._retry_reconcile()
         await _until(lambda: canvas._reconciliation.done())
@@ -230,3 +253,52 @@ async def test_not_saved_survives_a_failed_first_reload(
 
     caplog.clear()
     assert get_session_status(session_id) == "closed"
+
+
+async def test_rejected_edit_to_the_persisted_value_is_still_reported(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """The database's rejection decides, not whether the fields happen to be equal."""
+    async with _held_operation(user, monkeypatch, "edit", _request_same_edit) as (
+        session_id,
+        card,
+        canvas,
+        held,
+    ):
+        await _close_elsewhere(session_id, canvas)
+        assert not _notice(user).visible
+
+        held.release.set()
+        await _until(lambda: not canvas._requests)
+        assert _notice(user).visible and _notice(user).text == _NOT_SAVED
+        (persisted,) = cards.list_cards(session_id)
+        assert persisted == card
+        _assert_read_only(user, canvas)
+
+    caplog.clear()
+
+
+async def test_committed_edit_overwritten_before_closure_is_not_reported(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """An edit that committed is not 'not saved' because someone else changed the card."""
+    real_update = cards.update_card
+    async with _held_operation(user, monkeypatch, "edit", after=True) as (
+        session_id,
+        card,
+        canvas,
+        held,
+    ):
+        # The edit committed; only its response is delayed. Another participant overwrites it.
+        overwritten = real_update(session_id, card.id, "Overwritten")
+        await _close_elsewhere(session_id, canvas)
+
+        held.release.set()
+        await _until(lambda: not canvas._requests)
+        await asyncio.sleep(0.5)
+        assert not _notice(user).visible
+        assert cards.list_cards(session_id) == [overwritten]
+        assert "Overwritten" in _texts(user.current_layout)
+        _assert_read_only(user, canvas)
+
+    caplog.clear()

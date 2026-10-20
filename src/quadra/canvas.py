@@ -53,31 +53,18 @@ class _PendingMove:
     origin_index: int
 
 
-@dataclass(frozen=True)
+@dataclass(eq=False)
 class _Request:
-    """A card mutation request whose response has not arrived yet."""
+    """A card mutation request, identified by itself, and what its response said.
+
+    The outcome comes only from the mutation's own response: "committed" if it
+    succeeded, "rejected" if the database refused it because the session was closed.
+    It stays None while the response is awaited, or if it failed some other way.
+    """
 
     kind: str  # "insert", "edit", "move" or "delete"
     card_id: str
-    content: str = ""
-    quadrant_id: str = ""
-    index: int = 0
-
-    def committed(self, active: dict[str, Card]) -> bool:
-        """True if the authoritative active cards show the request as persisted."""
-        card = active.get(self.card_id)
-        if self.kind == "delete":
-            return card is None
-        return card is not None and self._matches(card)
-
-    def _matches(self, card: Card) -> bool:
-        """True if the persisted `card` carries what an insert, edit or move asked for."""
-        expected = {
-            "insert": True,
-            "edit": card.content == self.content,
-            "move": (card.quadrant_id, card.index) == (self.quadrant_id, self.index),
-        }
-        return expected[self.kind]
+    outcome: str | None = None
 
 
 def _load_quadrant_ids(session_id: str) -> list[str]:
@@ -176,6 +163,7 @@ class Canvas:
         # so no older mutation result or load can change what closure reconciled.
         self._generation = 0
         self._reconciliation: asyncio.Task[None] | None = None
+        self._reconciled = False  # the closed cards were loaded and shown
         self._requests: list[_Request] = []  # mutation requests awaiting their response
         # Requests unresolved when closure was first seen; kept until a reconciliation
         # succeeds, so a retried reload still judges them after their responses arrived.
@@ -275,21 +263,23 @@ class Canvas:
         self._pending.clear()
         self._moving.clear()
         self._drafts.clear()
+        self._reconciled = False
         self._reload_failure.set_visibility(False)
         self._reconciliation = asyncio.ensure_future(
-            self._reconcile(self._generation, self._closure_requests)
+            self._reconcile(self._generation)
         )
 
     async def _retry_reconcile(self) -> None:
         self._start_reconciliation()
         self._refresh_editing()
 
-    async def _reconcile(self, generation: int, unresolved: list[_Request]) -> None:
+    async def _reconcile(self, generation: int) -> None:
         """Replace the cards with the complete authoritative snapshot, unless superseded.
 
         If the load fails the view stays closed and read-only, with a retry offered; an
-        incomplete result is never shown as the finalized one. Only once the snapshot
-        shows that a request unresolved at closure did not commit is it reported unsaved.
+        incomplete result is never shown as the finalized one. A request unresolved at
+        closure is reported unsaved once the snapshot is shown and its own response says
+        the database rejected it, whichever of the two comes last.
         """
         try:
             snapshot, quadrant_ids = await self._load()
@@ -302,19 +292,37 @@ class Canvas:
         self._quadrant_ids = quadrant_ids
         self._buffered = []
         self._show(snapshot)
-        self._report_uncommitted(snapshot, unresolved)
-
-    def _report_uncommitted(self, snapshot: list[Card], unresolved: list[_Request]) -> None:
-        """Report the closure's loss only if a request is absent from the snapshot."""
-        active = {card.id: card for card in snapshot}
-        if any(not request.committed(active) for request in unresolved):
-            self._report_unsaved()
+        self._reconciled = True
+        self._report_unsaved()
 
     def _report_unsaved(self) -> None:
-        """Say that a pending change was not saved because the session closed."""
+        """Say, once, that a change pending at closure was not saved because of it.
+
+        Only after the authoritative cards are shown, and only for a request whose own
+        response was the database's closed-session rejection.
+        """
+        if not self._unsaved_pending():
+            return
         with self._client:
             self._unsaved_label.set_visibility(True)
             ui.notify(self._unsaved_label.text, type="warning")
+
+    def _unsaved_pending(self) -> bool:
+        """True if the unsaved report is due: reconciled, a rejection seen, not yet shown."""
+        if not self._reconciled or self._stopped or self._unsaved_label.visible:
+            return False
+        return any(request.outcome == "rejected" for request in self._closure_requests)
+
+    async def _send(self, request: _Request, function, *args, **kwargs):
+        """Run the card mutation `function` for `request` and record how it ended."""
+        try:
+            result = await asyncio.to_thread(function, self._session_id, *args, **kwargs)
+        except cards.CardSessionClosedError:
+            request.outcome = "rejected"
+            self._report_unsaved()
+            raise
+        request.outcome = "committed"
+        return result
 
     @contextmanager
     def _unresolved(self, request: _Request) -> Iterator[None]:
@@ -360,8 +368,9 @@ class Canvas:
         index = self._next_index(quadrant_id)
         self._pending[pending.id] = pending
         self._render(quadrant_id)
-        with self._unresolved(_Request("insert", pending.id)):
-            card = await self._insert(pending, index, generation)
+        request = _Request("insert", pending.id)
+        with self._unresolved(request):
+            card = await self._insert(request, pending, index, generation)
         if not self._is_current(generation):
             return  # closure dropped the overlay and reconciled the cards
         self._pending.pop(pending.id, None)
@@ -372,12 +381,14 @@ class Canvas:
         # The push of this same insert may have arrived already; cards are keyed by id.
         self._show_confirmed(card, quadrant_id)
 
-    async def _insert(self, pending: _PendingCard, index: int, generation: int) -> Card | None:
+    async def _insert(
+        self, request: _Request, pending: _PendingCard, index: int, generation: int
+    ) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be added."""
         try:
-            return await asyncio.to_thread(
+            return await self._send(
+                request,
                 cards.insert_card,
-                self._session_id,
                 pending.quadrant_id,
                 index,
                 pending.content,
@@ -402,17 +413,20 @@ class Canvas:
             ui.notify("Enter some text", type="warning")
             return
         generation = self._generation
-        with self._unresolved(_Request("edit", card_id, content=content)):
-            card = await self._update(card_id, content, generation)
+        request = _Request("edit", card_id)
+        with self._unresolved(request):
+            card = await self._update(request, card_id, content, generation)
         if card is None or not self._is_current(generation):
             return
         self._drafts.pop(card_id, None)
         self._show_confirmed(card)
 
-    async def _update(self, card_id: str, content: str, generation: int) -> Card | None:
+    async def _update(
+        self, request: _Request, card_id: str, content: str, generation: int
+    ) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be updated."""
         try:
-            return await asyncio.to_thread(cards.update_card, self._session_id, card_id, content)
+            return await self._send(request, cards.update_card, card_id, content)
         except cards.CardError:
             logger.exception("Card %s could not be updated", card_id)
             if self._is_current(generation):
@@ -430,9 +444,9 @@ class Canvas:
         if move is None:
             return
         generation = self._generation
-        request = _Request("move", card_id, quadrant_id=move.quadrant_id, index=move.index)
+        request = _Request("move", card_id)
         with self._unresolved(request):
-            card = await self._relocate(card_id, move.quadrant_id, move.index, generation)
+            card = await self._relocate(request, card_id, move.quadrant_id, move.index, generation)
         if not self._is_current(generation):
             return
         shown = self._clear_move(move)
@@ -497,13 +511,11 @@ class Canvas:
             self._render(quadrant_id)
 
     async def _relocate(
-        self, card_id: str, quadrant_id: str, index: int, generation: int
+        self, request: _Request, card_id: str, quadrant_id: str, index: int, generation: int
     ) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be moved."""
         try:
-            return await asyncio.to_thread(
-                cards.relocate_card, self._session_id, card_id, quadrant_id, index
-            )
+            return await self._send(request, cards.relocate_card, card_id, quadrant_id, index)
         except cards.CardError:
             logger.exception("Card %s could not be moved", card_id)
             if self._is_current(generation):
@@ -551,8 +563,9 @@ class Canvas:
             return
         generation = self._generation
         try:
-            with self._unresolved(_Request("delete", card_id)):
-                card = await asyncio.to_thread(cards.soft_delete_card, self._session_id, card_id)
+            request = _Request("delete", card_id)
+            with self._unresolved(request):
+                card = await self._send(request, cards.soft_delete_card, card_id)
         except cards.CardError:
             logger.exception("Card %s could not be deleted", card_id)
             if self._is_current(generation):
