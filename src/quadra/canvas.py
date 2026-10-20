@@ -14,7 +14,7 @@ import logging
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, fields, replace
+from dataclasses import asdict, dataclass, field, fields, replace
 from datetime import datetime
 
 from nicegui import Client, ui
@@ -62,11 +62,14 @@ class _Request:
     It stays None while the response is awaited, or if it failed some other way.
     `base` is the card as this view held it when the request started (None for an insert),
     so that a snapshot still showing that very version does not reflect the request.
+    `intended` holds the card fields the request asks for (content of an edit, placement
+    of a move), so a snapshot is compared with the requested result, not just with `base`.
     """
 
     kind: str  # "insert", "edit", "move" or "delete"
     card_id: str
     base: Card | None = None
+    intended: dict[str, object] = field(default_factory=dict)
     outcome: str | None = None
 
 
@@ -329,16 +332,25 @@ class Canvas:
     def _unreflected(self, request: _Request) -> bool:
         """True if the shown authoritative cards do not reflect `request`.
 
-        Known limit: a same-value edit or move, or a change overwritten or soft-deleted
-        by another participant, cannot be told apart from an unsaved one; its delayed
+        An edit or move is reflected only if the card changed since the request started
+        and now holds the requested result, so another participant's update to the card
+        does not stand in for it. Known limit: a change later overwritten or deleted by
+        another participant cannot be told apart from an unsaved one; its delayed
         success response removes the notice.
         """
         card = self._cards.get(request.card_id)
-        if request.kind == "insert":
-            return card is None
-        if card is None or request.base is None:
-            return False
-        return card.updated_at == request.base.updated_at
+        if request.kind == "delete":
+            return card is not None
+        if card is None:
+            return True
+        return request.kind != "insert" and self._not_updated(request, card)
+
+    @staticmethod
+    def _not_updated(request: _Request, card: Card) -> bool:
+        """True if `card` is still the version the request started from, or lacks its result."""
+        if request.base is not None and card.updated_at == request.base.updated_at:
+            return True
+        return any(getattr(card, name) != value for name, value in request.intended.items())
 
     async def _send(self, request: _Request, function, *args, **kwargs):
         """Run the card mutation `function` for `request` and record how it ended."""
@@ -441,7 +453,7 @@ class Canvas:
             ui.notify("Enter some text", type="warning")
             return
         generation = self._generation
-        request = _Request("edit", card_id, self._cards.get(card_id))
+        request = _Request("edit", card_id, self._cards.get(card_id), {"content": content})
         with self._unresolved(request):
             card = await self._update(request, card_id, content, generation)
         if card is None or not self._is_current(generation):
@@ -472,7 +484,12 @@ class Canvas:
         if move is None:
             return
         generation = self._generation
-        request = _Request("move", card_id, self._cards.get(card_id))
+        request = _Request(
+            "move",
+            card_id,
+            self._cards.get(card_id),
+            {"quadrant_id": move.quadrant_id, "index": move.index},
+        )
         with self._unresolved(request):
             card = await self._relocate(request, card_id, move.quadrant_id, move.index, generation)
         if not self._is_current(generation):

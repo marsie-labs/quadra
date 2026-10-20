@@ -309,10 +309,11 @@ async def test_operation_committed_before_closure_is_not_reported(
     caplog.clear()
 
 
-async def test_committed_edit_overwritten_before_closure_is_not_reported(
+async def test_committed_edit_overwritten_before_closure_clears_its_notice(
     user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
-    """An edit that committed is not 'not saved' because someone else changed the card."""
+    """Known limit: the overwritten edit is not reflected by the cards, so the notice
+    shows until the delayed success response removes it."""
     real_update = cards.update_card
     async with _held_operation(user, monkeypatch, "edit", after=True) as (
         session_id,
@@ -323,11 +324,40 @@ async def test_committed_edit_overwritten_before_closure_is_not_reported(
         # The edit committed; only its response is delayed. Another participant overwrites it.
         overwritten = real_update(session_id, card.id, "Overwritten")
         await _close_elsewhere(session_id, canvas)
+        assert _notice(user).visible
 
-        await _release_unreported(user, canvas, held)
+        await _release_and_clear_notice(user, canvas, held)
         assert cards.list_cards(session_id) == [overwritten]
         assert "Overwritten" in _texts(user.current_layout)
         _assert_read_only(user, canvas)
+
+    caplog.clear()
+
+
+@pytest.mark.parametrize("operation", ["edit", "move"])
+async def test_update_by_another_participant_does_not_hide_an_unsaved_change(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, operation: str
+):
+    """Another participant changes the card before closure; the uncommitted edit or move
+    is still reported, because the cards do not hold the requested result."""
+    real_update = cards.update_card
+    async with _held_operation(user, monkeypatch, operation) as (
+        session_id,
+        card,
+        canvas,
+        held,
+    ):
+        other = real_update(session_id, card.id, "Other participant")
+        await _until(lambda: canvas._cards[card.id] == other)
+        await _close_elsewhere(session_id, canvas)
+        assert _notice(user).visible and _notice(user).text == _NOT_SAVED
+        assert cards.list_cards(session_id) == [other]
+        _assert_read_only(user, canvas)
+
+        held.release.set()
+        await _until(lambda: not canvas._requests)
+        assert _notice(user).visible and _notice(user).text == _NOT_SAVED
+        assert cards.list_cards(session_id) == [other]
 
     caplog.clear()
 
