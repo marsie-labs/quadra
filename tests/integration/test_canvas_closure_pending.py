@@ -1,0 +1,199 @@
+import asyncio
+import threading
+from contextlib import asynccontextmanager
+
+import pytest
+from nicegui import ui
+from nicegui.testing import User
+
+from quadra import app as quadra_app
+from quadra import cards
+from quadra.canvas import Canvas, _load_quadrant_ids
+from quadra.sessions import close_session, create_session, get_session_status
+
+# Shared harness of the Realtime tests.
+from test_realtime import _release_all  # noqa: F401
+
+_MUTATION_MARKS = ("edit-", "delete-", "move-", "save-", "confirm-delete-")
+_NOT_SAVED = "Your pending change was not saved because the session closed"
+
+
+@pytest.fixture(autouse=True)
+def session_page(user: User):
+    """Serve the production session page again after the simulation reset NiceGUI."""
+
+    @ui.page("/sessions/{session_id}")
+    async def page(session_id: str) -> None:
+        await quadra_app.session_page(session_id)
+
+
+class _Held:
+    """Holds one card operation unresolved until released, then runs the real one."""
+
+    def __init__(self, real) -> None:
+        self._real = real
+        self.entered = threading.Event()
+        self.release = threading.Event()
+
+    def __call__(self, *args, **kwargs):
+        self.entered.set()
+        assert self.release.wait(timeout=30), "barrier was never released"
+        return self._real(*args, **kwargs)
+
+
+async def _until(condition) -> None:
+    async with asyncio.timeout(10):
+        while not condition():
+            await asyncio.sleep(0.05)
+
+
+def _marks(user: User) -> list[str]:
+    return [mark for element in user.current_layout.descendants() for mark in element._markers]
+
+
+def _notice(user: User) -> ui.label:
+    """The 'not saved' label; User.find skips hidden elements, so look it up directly."""
+    return next(e for e in user.current_layout.descendants() if "change-not-saved" in e._markers)
+
+
+def _texts(element) -> list[str]:
+    return [e.text for e in element.descendants() if isinstance(e, ui.label)]
+
+
+def _record_canvases(monkeypatch: pytest.MonkeyPatch) -> list[Canvas]:
+    canvases: list[Canvas] = []
+
+    class _Recorded(Canvas):
+        def __init__(self, session) -> None:
+            super().__init__(session)
+            canvases.append(self)
+
+    monkeypatch.setattr(quadra_app, "Canvas", _Recorded)
+    return canvases
+
+
+async def _request_insert(user: User, card: cards.Card) -> None:
+    user.find(marker="display-name").type("Bob")
+    user.find(marker="content-0").type("Uncommitted")
+    user.find(marker="submit-0").click()
+
+
+async def _request_edit(user: User, card: cards.Card) -> None:
+    user.find(marker=f"edit-{card.id}").click()
+    await user.should_see(marker=f"save-{card.id}")
+    (editor,) = user.find(marker=f"edit-content-{card.id}").elements
+    editor.value = "Uncommitted"
+    user.find(marker=f"save-{card.id}").click()
+
+
+async def _request_move(user: User, card: cards.Card) -> None:
+    (target,) = user.find(marker=f"move-quadrant-{card.id}").elements
+    (at,) = user.find(marker=f"move-index-{card.id}").elements
+    target.value, at.value = 1, 3
+    user.find(marker=f"move-{card.id}").click()
+
+
+async def _request_delete(user: User, card: cards.Card) -> None:
+    user.find(marker=f"delete-{card.id}").click()
+    await user.should_see(marker=f"confirm-delete-{card.id}")
+    user.find(marker=f"confirm-delete-{card.id}").click()
+
+
+_OPERATIONS = {
+    "insert": ("insert_card", _request_insert),
+    "edit": ("update_card", _request_edit),
+    "move": ("relocate_card", _request_move),
+    "delete": ("soft_delete_card", _request_delete),
+}
+
+
+def _assert_authoritative_closed_cards(user: User, canvas: Canvas, card: cards.Card) -> None:
+    """The cards shown are exactly the persisted ones: no uncommitted change appears."""
+    (persisted,) = cards.list_cards(canvas._session_id)
+    assert persisted == card
+    first, second = (_texts(column) for column in canvas._columns[:2])
+    assert (first.count("Mover"), second.count("Mover")) == (1, 0)
+    _assert_no_overlay(user, canvas)
+
+
+def _assert_no_overlay(user: User, canvas: Canvas) -> None:
+    assert "Uncommitted" not in _texts(user.current_layout)
+    assert "Pending" not in _texts(user.current_layout)
+    assert not canvas._pending and not canvas._moving and not canvas._drafts
+    assert not [mark for mark in _marks(user) if mark.startswith("pending-")]
+
+
+def _assert_read_only(user: User, canvas: Canvas) -> None:
+    assert canvas._closed and not canvas._editable
+    assert not [mark for mark in _marks(user) if mark.startswith(_MUTATION_MARKS)]
+    assert not any(
+        e.enabled
+        for e in user.current_layout.descendants()
+        if isinstance(e, ui.button) and any(m.startswith("submit-") for m in e._markers)
+    )
+
+
+@asynccontextmanager
+async def _held_operation(user: User, monkeypatch: pytest.MonkeyPatch, operation: str):
+    """Open the session with `operation` requested and held unresolved and uncommitted.
+
+    Yields the session id, the persisted card, the canvas and the barrier; on exit the
+    barrier is released and the Realtime views are released.
+    """
+    function, request = _OPERATIONS[operation]
+    session_id = create_session("Closure Pending").session_id
+    q1 = _load_quadrant_ids(session_id)[0]
+    card = cards.insert_card(session_id, q1, 0, "Mover", "Alice")
+    held = _Held(getattr(cards, function))
+    monkeypatch.setattr(cards, function, held)
+    canvases = _record_canvases(monkeypatch)
+    try:
+        await user.open(f"/sessions/{session_id}")
+        await user.should_see(marker=f"move-{card.id}", retries=100)
+        (canvas,) = canvases
+        await _until(lambda: all(b.enabled for b in user.find(marker="submit-0").elements))
+        await request(user, card)
+        await asyncio.wait_for(asyncio.to_thread(held.entered.wait, 10), timeout=15)
+        yield session_id, card, canvas, held
+    finally:
+        held.release.set()
+        await _release_all(session_id)
+
+
+async def _close_elsewhere(session_id: str, canvas: Canvas) -> None:
+    """S closes while the operation is unresolved; wait for the reconciliation to end."""
+    await asyncio.to_thread(close_session, session_id)
+    await _until(lambda: canvas._closed)
+    await _until(lambda: canvas._reconciliation is not None and canvas._reconciliation.done())
+
+
+def _assert_discarded(user: User, canvas: Canvas, card: cards.Card, generation: int) -> None:
+    """Closure was reconciled and reported while the operation's response is delayed."""
+    assert canvas._generation > generation
+    assert canvas._requests  # the response is still delayed
+    assert _notice(user).visible and _notice(user).text == _NOT_SAVED
+    _assert_authoritative_closed_cards(user, canvas, card)
+    _assert_read_only(user, canvas)
+
+
+@pytest.mark.parametrize("operation", list(_OPERATIONS))
+async def test_closure_discards_the_pending_operation_and_says_it_was_not_saved(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, operation: str
+):
+    async with _held_operation(user, monkeypatch, operation) as (session_id, card, canvas, held):
+        generation = canvas._generation
+        assert canvas._requests and not canvas._closed
+        assert not _notice(user).visible
+
+        await _close_elsewhere(session_id, canvas)
+        _assert_discarded(user, canvas, card, generation)
+
+        # The delayed response then arrives: closure already decided, nothing changes.
+        held.release.set()
+        await _until(lambda: not canvas._requests)
+        await asyncio.sleep(0.5)
+        _assert_authoritative_closed_cards(user, canvas, card)
+        _assert_read_only(user, canvas)
+
+    caplog.clear()  # the rejected mutation of a closed session is logged by design
+    assert get_session_status(session_id) == "closed"
