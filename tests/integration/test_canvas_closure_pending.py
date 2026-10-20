@@ -278,6 +278,14 @@ async def test_rejected_edit_to_the_persisted_value_is_still_reported(
     caplog.clear()
 
 
+async def _release_unreported(user: User, canvas: Canvas, held: _Held) -> None:
+    """Let the delayed response arrive and settle: the change is still not reported."""
+    held.release.set()
+    await _until(lambda: not canvas._requests)
+    await asyncio.sleep(0.5)
+    assert not _notice(user).visible
+
+
 @pytest.mark.parametrize("operation", ["insert", "move", "delete"])
 async def test_operation_committed_before_closure_is_not_reported(
     user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, operation: str
@@ -295,10 +303,7 @@ async def test_operation_committed_before_closure_is_not_reported(
         committed = {"insert": 2, "move": 1, "delete": 0}[operation]
         assert len(cards.list_cards(session_id)) == committed  # it did commit
 
-        held.release.set()
-        await _until(lambda: not canvas._requests)
-        await asyncio.sleep(0.5)
-        assert not _notice(user).visible
+        await _release_unreported(user, canvas, held)
         _assert_read_only(user, canvas)
 
     caplog.clear()
@@ -319,12 +324,37 @@ async def test_committed_edit_overwritten_before_closure_is_not_reported(
         overwritten = real_update(session_id, card.id, "Overwritten")
         await _close_elsewhere(session_id, canvas)
 
-        held.release.set()
-        await _until(lambda: not canvas._requests)
-        await asyncio.sleep(0.5)
-        assert not _notice(user).visible
+        await _release_unreported(user, canvas, held)
         assert cards.list_cards(session_id) == [overwritten]
         assert "Overwritten" in _texts(user.current_layout)
+        _assert_read_only(user, canvas)
+
+    caplog.clear()
+
+
+def _delete_inserted(session_id: str, persisted: cards.Card) -> None:
+    """Soft-delete the card the held insert committed, other than `persisted`."""
+    (inserted,) = [c for c in cards.list_cards(session_id) if c.id != persisted.id]
+    cards.soft_delete_card(session_id, inserted.id)
+
+
+async def test_insert_committed_then_deleted_before_closure_is_not_reported(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """An insert that committed and was then deleted is absent from the cards, not unsaved."""
+    async with _held_operation(user, monkeypatch, "insert", after=True) as (
+        session_id,
+        card,
+        canvas,
+        held,
+    ):
+        _delete_inserted(session_id, card)
+        await _close_elsewhere(session_id, canvas)
+        assert canvas._requests  # the success response is still delayed
+        assert not _notice(user).visible
+
+        await _release_unreported(user, canvas, held)
+        assert cards.list_cards(session_id) == [card]
         _assert_read_only(user, canvas)
 
     caplog.clear()

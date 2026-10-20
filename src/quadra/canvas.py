@@ -68,6 +68,9 @@ class _Request:
     card_id: str
     base: Card | None = None
     outcome: str | None = None
+    # For an insert: whether the authoritative store holds the card at all, soft-deleted or
+    # not, as read at reconciliation; None until read.
+    persisted: bool | None = None
 
 
 def _load_quadrant_ids(session_id: str) -> list[str]:
@@ -81,6 +84,16 @@ def _load_quadrant_ids(session_id: str) -> list[str]:
         .data
     )
     return [row["id"] for row in sorted(rows, key=lambda row: row["position"])]
+
+
+def _persisted_ids(card_ids: list[str]) -> set[str]:
+    """Which of `card_ids` exist as card rows, soft-deleted ones included."""
+    rows = get_client().table("cards").select("id").in_("id", card_ids).execute().data
+    return {row["id"] for row in rows}
+
+
+def _is_open_insert(request: _Request) -> bool:
+    return request.kind == "insert" and request.outcome is None
 
 
 def _instant(timestamp: str) -> datetime:
@@ -286,6 +299,7 @@ class Canvas:
         """
         try:
             snapshot, quadrant_ids = await self._load()
+            await self._read_inserted()
         except Exception:
             logger.exception("Closed session %s could not be reloaded", self._session_id)
             self._show_reload_failure(generation)
@@ -297,6 +311,18 @@ class Canvas:
         self._show(snapshot)
         self._reconciled = True
         self._report_unsaved()
+
+    async def _read_inserted(self) -> None:
+        """Learn whether each insert unresolved at closure left a row, deleted or not.
+
+        An inserted card missing from the active cards may have committed and been
+        deleted since, so only the row itself shows that the insert never committed.
+        """
+        inserts = list(filter(_is_open_insert, self._closure_requests))
+        if inserts:
+            found = await asyncio.to_thread(_persisted_ids, [r.card_id for r in inserts])
+            for request in inserts:
+                request.persisted = request.card_id in found
 
     def _report_unsaved(self) -> None:
         """Say, once, that a change pending at closure was not saved because of it.
@@ -331,7 +357,7 @@ class Canvas:
         """True if the shown authoritative cards prove `request` did not commit."""
         card = self._cards.get(request.card_id)
         if request.kind == "insert":
-            return card is None and request.card_id not in self._deleted
+            return request.persisted is False
         if card is None or request.base is None:
             return False
         return card.updated_at == request.base.updated_at
