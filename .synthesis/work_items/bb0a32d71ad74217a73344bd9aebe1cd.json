@@ -57,7 +57,7 @@
     "SPEC": "docs/specs/SPEC-0003.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. Canvas._on_change continues folding card notifications after closed-session reconciliation, without a closed-state guard. A delayed pre-deletion insert/update notification for a card absent from the finalized snapshot can therefore restore that card, violating the Contract's authoritative closed-state reconciliation and reordered-notification requirements. The complete authoritative closed-session card set is not protected from subsequent stale card notifications: _on_change still passes them to _fold after _reconcile replaces the snapshot. The added reordered-notification test exercises an older version of a retained card, but does not cover resurrection of a card soft-deleted before closure. The Contract already requires monotonic reconciliation to the complete persisted non-deleted card set, including reordered card/session notifications. This is a code-level integration gap requiring protection of the reconciled snapshot and a deleted-card notification regression test, not a spec amendment.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
