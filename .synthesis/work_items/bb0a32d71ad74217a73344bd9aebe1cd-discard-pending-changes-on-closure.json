@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "discard-pending-changes-on-closure",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0010.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: `_unreflected()` treats an inserted card's absence from the active snapshot and `_deleted` as proof that insertion never committed, but an insertion can commit and then be soft-deleted by another participant before closure, with its Realtime deletion notification still delayed. This incorrectly displays the definitive 'not saved' warning, which a delayed successful response never clears, violating the Contract's prohibition on reporting pre-closure committed changes as unsaved.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
