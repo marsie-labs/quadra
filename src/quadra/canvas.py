@@ -136,12 +136,15 @@ class Canvas:
         self._loading = True
         self._registration: asyncio.Future[None] | None = None
         self._stopped = False  # the client disconnected
-        self._closed = False  # a closed state was received; it is never undone
+        # A closed state was received (or the session was loaded closed); it is never undone.
+        self._closed = session.status == "closed"
         self._closing = False  # a closure request is unresolved: editing is suspended
         # Responses of requests started before the latest bump are stale: closure bumps it,
         # so no older mutation result or load can change what closure reconciled.
         self._generation = 0
         self._reconciliation: asyncio.Task[None] | None = None
+        if self._closed:
+            self._show_closed()
 
     @property
     def _editable(self) -> bool:
@@ -216,12 +219,16 @@ class Canvas:
         first = not self._closed
         self._closed = True
         self._closing = False
-        self._close_button.set_visibility(False)
-        self._failure_label.set_visibility(False)
-        self._closed_label.set_visibility(True)
+        self._show_closed()
         if first:
             self._start_reconciliation()
         self._refresh_editing()
+
+    def _show_closed(self) -> None:
+        """Offer no way to close again, and say that the session is closed."""
+        self._close_button.set_visibility(False)
+        self._failure_label.set_visibility(False)
+        self._closed_label.set_visibility(True)
 
     def _start_reconciliation(self) -> None:
         """Invalidate older responses, drop optimistic overlays, reload the cards."""
