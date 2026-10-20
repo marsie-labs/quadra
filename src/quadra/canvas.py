@@ -655,9 +655,10 @@ class Canvas:
         """Register for pushes, then load the active cards and show them."""
         await self._client.connected()
         generation = self._generation
-        snapshot = await self._register_and_load()
-        if snapshot is None or self._stopped or not self._is_current(generation):
-            return  # a closure meanwhile reloads the cards itself
+        loaded = await self._register_and_load()
+        if loaded is None or self._stopped or not self._is_current(generation):
+            return  # a closure meanwhile reloads the cards and quadrants itself
+        snapshot, self._quadrant_ids = loaded
         self._show(snapshot)
 
     def _show(self, snapshot: list[Card]) -> None:
@@ -673,7 +674,7 @@ class Canvas:
             for quadrant_id in self._quadrant_ids:
                 self._render(quadrant_id)
 
-    async def _register_and_load(self) -> list[Card] | None:
+    async def _register_and_load(self) -> tuple[list[Card], list[str]] | None:
         """Subscribe, then load the snapshot; None (after showing an error) on failure."""
         # Cleanup comes first: a disconnect while the subscription is becoming ready
         # must still release it once registration settles.
@@ -685,7 +686,7 @@ class Canvas:
             await asyncio.shield(self._registration)
             if self._stopped:
                 return None
-            snapshot, self._quadrant_ids = await self._load()
+            loaded = await self._load()
         except Exception:
             logger.exception("Cards of session %s could not be loaded", self._session_id)
             if self._stopped:
@@ -693,7 +694,7 @@ class Canvas:
             with self._client:
                 ui.label("Cards could not be loaded").classes("text-negative")
             return None
-        return snapshot
+        return loaded
 
     async def _load(self) -> tuple[list[Card], list[str]]:
         snapshot = await asyncio.to_thread(cards.list_cards, self._session_id)
