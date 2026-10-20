@@ -13,5 +13,18 @@
     "failed_checks": {
       "ADR-0003: Committed changes reach a second same-session client (a NiceGUI simulated user) in less than 2000ms through Supabase Realtime and NiceGUI WebSocket with polling disabled.": "E       AssertionError: Expected status code 200, got 500\n\n.venv/lib/python3.11/site-packages/nicegui/testing/user.py:72: AssertionError\n------------------------------ Captured log call -------------------------------\nWARNING  nicegui:page.py:203 Response for /watch/{session_id} not ready after 3.0 seconds\n=============================== warnings summary ===============================\n.venv/lib/python3.11/site-packages/fastapi/testclient.py:1\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient as TestClient  # noqa\n\ntests/integration/test_realtime.py::test_push_delivery_without_polling\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_sync/client.py:309: DeprecationWarning: The 'timeout' parameter is deprecated. Please configure it in the http client instead.\n    return SyncPostgrestClient(\n\ntests/integration/test_realtime.py::test_push_delivery_without_polling\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_sync/client.py:309: DeprecationWarning: The 'verify' parameter is deprecated. Please configure it in the http client instead.\n    return SyncPostgrestClient(\n\ntests/integration/test_realtime.py::test_push_delivery_without_polling\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_async/client.py:310: DeprecationWarning: The 'timeout' parameter is deprecated. Please configure it in the http client instead.\n    return AsyncPostgrestClient(\n\ntests/integration/test_realtime.py::test_push_delivery_without_polling\n  /Users/marco/src/marsie/quadra/.venv/lib/python3.11/site-packages/supabase/_async/client.py:310: DeprecationWarning: The 'verify' parameter is deprecated. Please configure it in the http client instead.\n    return AsyncPostgrestClient(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED tests/integration/test_realtime.py::test_push_delivery_without_polling\n======================== 1 failed, 5 warnings in 5.94s ========================="
     }
+  },
+  {
+    "artifact_id": "closed-session-load-read-only",
+    "stage": "ASSEMBLE",
+    "passed": true,
+    "policy": "agent",
+    "approver": null,
+    "rejection_reason": null,
+    "constitution_version": null,
+    "quiz_questions": null,
+    "quiz_answers": null,
+    "quiz_justification": null,
+    "failed_checks": null
   }
 ]
