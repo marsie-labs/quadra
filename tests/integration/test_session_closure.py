@@ -14,10 +14,16 @@ from pathlib import Path
 import psycopg
 import pytest
 from postgrest.exceptions import APIError
+from nicegui import ui
+from nicegui.testing import User
 from psycopg.rows import dict_row
 
+from quadra import app as quadra_app
 from quadra import cards
-from quadra.sessions import create_session
+from quadra.sessions import create_session, get_session_status
+
+# Shared harness of the canvas closure tests.
+from test_canvas_close import _release_all, _wait_until_registered
 
 MIGRATION = Path(__file__).resolve().parents[2] / "supabase/migrations/0005_session_closure.sql"
 CLOSED = "Session is closed"
@@ -401,3 +407,45 @@ def test_database_lifecycle_boundary():
     for name in ("insert", "edit", "move", "soft_delete"):
         _closure_wins_the_lock(name)
         _mutation_wins_the_lock(name)
+
+
+@pytest.fixture
+def session_page(user: User):
+    """Serve the production session page again after the simulation reset NiceGUI."""
+
+    @ui.page("/sessions/{session_id}")
+    async def page(session_id: str) -> None:
+        await quadra_app.session_page(session_id)
+
+
+async def test_anonymous_close_and_finalized_retrieval(client, user: User, session_page):
+    """No credentials or roles anywhere: the canvas closes a session, the API serves it."""
+    session_id = create_session("Anonymous lifecycle").session_id
+    data_url = f"/sessions/{session_id}/data"
+    try:
+        await user.open(f"/sessions/{session_id}")
+        await user.should_see(marker="close-session")
+        await _wait_until_registered(session_id)
+
+        _assert_still_open(client.get(data_url))
+
+        user.find(marker="close-session").click()
+        await user.should_see(marker="session-closed", retries=100)
+        assert get_session_status(session_id) == "closed"
+
+        _assert_finalized(client.get(data_url), session_id)
+        assert client.get(f"/sessions/{uuid.uuid4()}/data").status_code == 404
+    finally:
+        await _release_all(session_id)
+
+
+def _assert_still_open(response) -> None:
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Session is still open"}
+
+
+def _assert_finalized(response, session_id: str) -> None:
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["session_id"], body["status"]) == (session_id, "closed")
+    assert len(body["quadrants"]) == 4
