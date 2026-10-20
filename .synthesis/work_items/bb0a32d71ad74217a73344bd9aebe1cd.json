@@ -48,7 +48,8 @@
     "bb0a32d71ad74217a73344bd9aebe1cd-ignore-stale-async-results-after-closure",
     "bb0a32d71ad74217a73344bd9aebe1cd-closure-during-initial-load",
     "bb0a32d71ad74217a73344bd9aebe1cd-closure-reconciliation-test",
-    "bb0a32d71ad74217a73344bd9aebe1cd-anonymous-lifecycle-surface-test"
+    "bb0a32d71ad74217a73344bd9aebe1cd-anonymous-lifecycle-surface-test",
+    "bb0a32d71ad74217a73344bd9aebe1cd-reconcile-closure-after-registration-and-retry-closed-load"
   ],
   "artifact_paths": {
     "DISCOVER": "docs/discovery/DG-0003.md",
@@ -56,7 +57,7 @@
     "SPEC": "docs/specs/SPEC-0003.md"
   },
   "pending_artifacts": {},
-  "rework_notes": "Spec-level acceptance rejected the landing (contract, definition-of-done) and rerouted to PBI_PLANNING. Canvas.start registers after the Session lifecycle snapshot was obtained and never rereads status after registration, so closure between that snapshot and subscription can be missed indefinitely, leaving the canvas editable. Also, an initially closed session whose first load fails receives only the generic load-error label in _register_and_load, without the retry required by the Contract. The read-only lifecycle requirements are not guaranteed: Canvas initializes _closed from the earlier Session snapshot, while _register_and_load only loads cards and quadrants, leaving no authoritative lifecycle reconciliation for a closure missed before subscription. A view connecting across that interval can therefore render a closed session with mutation controls still enabled, even though database writes are rejected. These are implementation gaps against explicit requirements for authoritative read-only loading, subscription/load coordination, and retry after failed closed-state reconciliation. The Contract need not change; an integration PBI should close the lifecycle-read/subscription race and provide retry for initially closed load failures.",
+  "rework_notes": null,
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
