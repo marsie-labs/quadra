@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "id": "e78e1d9b-9a82-4c66-adbd-61c77b63fabf",
+  "timestamp": "2026-10-20T22:36:20Z",
+  "tool": {
+    "name": "synthesis"
+  },
+  "files": [
+    {
+      "path": "src/quadra/canvas.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 689,
+              "end_line": 690,
+              "content_hash": "sha256:47139c25592a8750fd6433ee504a74255b020eabfd01e12300680f5561a007f5"
+            },
+            {
+              "start_line": 701,
+              "end_line": 718,
+              "content_hash": "sha256:0e08486f2f01fb4b1cf768e94ec8bc41bbe8aa3483705173c00570a12fc99549"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tests/integration/test_canvas_lifecycle_reconcile.py",
+      "conversations": [
+        {
+          "contributor": {
+            "type": "ai",
+            "model_id": "openrouter/anthropic/claude-sonnet-5.5"
+          },
+          "ranges": [
+            {
+              "start_line": 1,
+              "end_line": 217,
+              "content_hash": "sha256:cd419864f560859121e1f3e87731f000af5d326523700a2dd0a2e485f6e981b9"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "pbi": "SPEC-0003/PBI-0015",
+    "rev": 1,
+    "base_revision": "296b16d733b12b3c404887cb63200e43b4b05610"
+  }
+}
