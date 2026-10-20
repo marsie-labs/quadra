@@ -338,10 +338,18 @@ def _delete_inserted(session_id: str, persisted: cards.Card) -> None:
     cards.soft_delete_card(session_id, inserted.id)
 
 
-async def test_insert_committed_then_deleted_before_closure_is_not_reported(
+async def _release_and_clear_notice(user: User, canvas: Canvas, held: _Held) -> None:
+    """The delayed success response arrives: the notice, shown meanwhile, is removed."""
+    held.release.set()
+    await _until(lambda: not canvas._requests)
+    assert not _notice(user).visible
+
+
+async def test_insert_committed_then_deleted_before_closure_clears_its_notice(
     user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
-    """An insert that committed and was then deleted is absent from the cards, not unsaved."""
+    """Known limit: the deleted insert is absent from the cards, so the notice shows
+    until the delayed success response removes it."""
     async with _held_operation(user, monkeypatch, "insert", after=True) as (
         session_id,
         card,
@@ -351,10 +359,31 @@ async def test_insert_committed_then_deleted_before_closure_is_not_reported(
         _delete_inserted(session_id, card)
         await _close_elsewhere(session_id, canvas)
         assert canvas._requests  # the success response is still delayed
+        assert _notice(user).visible and _notice(user).text == _NOT_SAVED
+
+        await _release_and_clear_notice(user, canvas, held)
+        assert cards.list_cards(session_id) == [card]
+        _assert_read_only(user, canvas)
+
+    caplog.clear()
+
+
+async def test_every_authoritative_page_is_consulted(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """With pages smaller than the cards, a committed insert is not reported unsaved."""
+    monkeypatch.setattr(cards, "_PAGE_SIZE", 1)
+    async with _held_operation(user, monkeypatch, "insert", after=True) as (
+        session_id,
+        card,
+        canvas,
+        held,
+    ):
+        await _close_elsewhere(session_id, canvas)
+        assert len(cards.list_cards(session_id)) == 2
         assert not _notice(user).visible
 
         await _release_unreported(user, canvas, held)
-        assert cards.list_cards(session_id) == [card]
         _assert_read_only(user, canvas)
 
     caplog.clear()

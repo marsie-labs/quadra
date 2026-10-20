@@ -61,16 +61,13 @@ class _Request:
     succeeded, "rejected" if the database refused it because the session was closed.
     It stays None while the response is awaited, or if it failed some other way.
     `base` is the card as this view held it when the request started (None for an insert),
-    so that a snapshot still showing that very version proves the request did not commit.
+    so that a snapshot still showing that very version does not reflect the request.
     """
 
     kind: str  # "insert", "edit", "move" or "delete"
     card_id: str
     base: Card | None = None
     outcome: str | None = None
-    # For an insert: whether the authoritative store holds the card at all, soft-deleted or
-    # not, as read at reconciliation; None until read.
-    persisted: bool | None = None
 
 
 def _load_quadrant_ids(session_id: str) -> list[str]:
@@ -84,16 +81,6 @@ def _load_quadrant_ids(session_id: str) -> list[str]:
         .data
     )
     return [row["id"] for row in sorted(rows, key=lambda row: row["position"])]
-
-
-def _persisted_ids(card_ids: list[str]) -> set[str]:
-    """Which of `card_ids` exist as card rows, soft-deleted ones included."""
-    rows = get_client().table("cards").select("id").in_("id", card_ids).execute().data
-    return {row["id"] for row in rows}
-
-
-def _is_open_insert(request: _Request) -> bool:
-    return request.kind == "insert" and request.outcome is None
 
 
 def _instant(timestamp: str) -> datetime:
@@ -294,12 +281,11 @@ class Canvas:
 
         If the load fails the view stays closed and read-only, with a retry offered; an
         incomplete result is never shown as the finalized one. A request unresolved at
-        closure is reported unsaved once the snapshot is shown and either shows it did
-        not commit or its own response says the database rejected it.
+        closure is reported unsaved once the snapshot is shown and does not reflect it,
+        or its own response says the database rejected it.
         """
         try:
             snapshot, quadrant_ids = await self._load()
-            await self._read_inserted()
         except Exception:
             logger.exception("Closed session %s could not be reloaded", self._session_id)
             self._show_reload_failure(generation)
@@ -310,54 +296,46 @@ class Canvas:
         self._buffered = []
         self._show(snapshot)
         self._reconciled = True
-        self._report_unsaved()
+        self._sync_unsaved()
 
-    async def _read_inserted(self) -> None:
-        """Learn whether each insert unresolved at closure left a row, deleted or not.
+    def _sync_unsaved(self) -> None:
+        """Show the 'not saved' notice while a change pending at closure is not reflected.
 
-        An inserted card missing from the active cards may have committed and been
-        deleted since, so only the row itself shows that the insert never committed.
+        Only after the authoritative cards are shown. The notice is announced once, and
+        removed when the delayed success response of the last unreflected change arrives.
         """
-        inserts = list(filter(_is_open_insert, self._closure_requests))
-        if inserts:
-            found = await asyncio.to_thread(_persisted_ids, [r.card_id for r in inserts])
-            for request in inserts:
-                request.persisted = request.card_id in found
+        if self._reconciled and not self._stopped:
+            self._set_unsaved(any(self._not_saved(r) for r in self._closure_requests))
 
-    def _report_unsaved(self) -> None:
-        """Say, once, that a change pending at closure was not saved because of it.
-
-        Only after the authoritative cards are shown, and only for a request that those
-        cards show did not commit, or whose own response was the database's rejection.
-        """
-        if not self._unsaved_pending():
+    def _set_unsaved(self, due: bool) -> None:
+        """Show or hide the notice; announce it only when it newly appears."""
+        if due == self._unsaved_label.visible:
             return
         with self._client:
-            self._unsaved_label.set_visibility(True)
-            ui.notify(self._unsaved_label.text, type="warning")
-
-    def _unsaved_pending(self) -> bool:
-        """True if the unsaved report is due: reconciled, a change lost, not yet shown."""
-        if not self._reconciled or self._stopped or self._unsaved_label.visible:
-            return False
-        return any(self._not_saved(request) for request in self._closure_requests)
+            self._unsaved_label.set_visibility(due)
+            if due:
+                ui.notify(self._unsaved_label.text, type="warning")
 
     def _not_saved(self, request: _Request) -> bool:
-        """True if the database rejected `request`, or the shown cards prove it never landed.
+        """True if the database rejected `request`, or the shown cards do not reflect it.
 
         Called once the authoritative closed cards are shown, so it need not wait for the
-        delayed response. A request that committed is never reported; one whose effect
-        cannot be told apart from another participant's change waits for its response.
+        delayed response. A response that says the request committed always clears it.
         """
         if request.outcome is not None:
             return request.outcome == "rejected"
         return self._unreflected(request)
 
     def _unreflected(self, request: _Request) -> bool:
-        """True if the shown authoritative cards prove `request` did not commit."""
+        """True if the shown authoritative cards do not reflect `request`.
+
+        Known limit: a same-value edit or move, or a change overwritten or soft-deleted
+        by another participant, cannot be told apart from an unsaved one; its delayed
+        success response removes the notice.
+        """
         card = self._cards.get(request.card_id)
         if request.kind == "insert":
-            return request.persisted is False
+            return card is None
         if card is None or request.base is None:
             return False
         return card.updated_at == request.base.updated_at
@@ -368,9 +346,10 @@ class Canvas:
             result = await asyncio.to_thread(function, self._session_id, *args, **kwargs)
         except cards.CardSessionClosedError:
             request.outcome = "rejected"
-            self._report_unsaved()
+            self._sync_unsaved()
             raise
         request.outcome = "committed"
+        self._sync_unsaved()
         return result
 
     @contextmanager
