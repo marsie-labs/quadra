@@ -197,3 +197,36 @@ async def test_closure_discards_the_pending_operation_and_says_it_was_not_saved(
 
     caplog.clear()  # the rejected mutation of a closed session is logged by design
     assert get_session_status(session_id) == "closed"
+
+
+@pytest.mark.parametrize("operation", list(_OPERATIONS))
+async def test_not_saved_survives_a_failed_first_reload(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, operation: str
+):
+    """The pending evidence outlives the operation's response until a reload succeeds."""
+    async with _held_operation(user, monkeypatch, operation) as (session_id, card, canvas, held):
+        real_load, calls = canvas._load, []
+
+        async def flaky_load():
+            calls.append(None)
+            if len(calls) == 1:
+                raise RuntimeError("reload failed")
+            return await real_load()
+
+        monkeypatch.setattr(canvas, "_load", flaky_load)
+        await _close_elsewhere(session_id, canvas)
+        assert not _notice(user).visible
+
+        # The rejected response arrives before the reload is retried.
+        held.release.set()
+        await _until(lambda: not canvas._requests)
+
+        await canvas._retry_reconcile()
+        await _until(lambda: canvas._reconciliation.done())
+        assert len(calls) == 2
+        assert _notice(user).visible and _notice(user).text == _NOT_SAVED
+        _assert_authoritative_closed_cards(user, canvas, card)
+        _assert_read_only(user, canvas)
+
+    caplog.clear()
+    assert get_session_status(session_id) == "closed"

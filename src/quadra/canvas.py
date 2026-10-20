@@ -177,6 +177,9 @@ class Canvas:
         self._generation = 0
         self._reconciliation: asyncio.Task[None] | None = None
         self._requests: list[_Request] = []  # mutation requests awaiting their response
+        # Requests unresolved when closure was first seen; kept until a reconciliation
+        # succeeds, so a retried reload still judges them after their responses arrived.
+        self._closure_requests: list[_Request] = []
         if self._closed:
             self._show_closed()
 
@@ -251,6 +254,8 @@ class Canvas:
         drops the optimistic overlays and reloads the authoritative cards.
         """
         first = not self._closed
+        if first:
+            self._closure_requests = list(self._requests)
         self._closed = True
         self._closing = False
         self._show_closed()
@@ -272,7 +277,7 @@ class Canvas:
         self._drafts.clear()
         self._reload_failure.set_visibility(False)
         self._reconciliation = asyncio.ensure_future(
-            self._reconcile(self._generation, list(self._requests))
+            self._reconcile(self._generation, self._closure_requests)
         )
 
     async def _retry_reconcile(self) -> None:
