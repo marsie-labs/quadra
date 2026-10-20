@@ -686,6 +686,8 @@ class Canvas:
             await asyncio.shield(self._registration)
             if self._stopped:
                 return None
+            if await self._reconcile_lifecycle():
+                return None  # closed: the reconciliation loads the finalized cards
             loaded = await self._load()
         except Exception:
             logger.exception("Cards of session %s could not be loaded", self._session_id)
@@ -695,6 +697,24 @@ class Canvas:
                 ui.label("Cards could not be loaded").classes("text-negative")
             return None
         return loaded
+
+    async def _reconcile_lifecycle(self) -> bool:
+        """After registration, take the authoritative lifecycle state; True if closed.
+
+        Closure is only ever latched, never undone: an open answer, or one that cannot
+        be read, leaves a closure received by push in the meantime in place. A closed
+        session is loaded by the reconciliation, whose failure offers a retry.
+        """
+        status = await self._read_status()
+        if self._stopped:
+            return False
+        with self._client:
+            if status == "closed":
+                self._set_closed()
+            if self._closed and self._reconciliation is None:
+                self._start_reconciliation()  # loaded closed: nothing reconciled it yet
+                self._refresh_editing()
+        return self._closed
 
     async def _load(self) -> tuple[list[Card], list[str]]:
         snapshot = await asyncio.to_thread(cards.list_cards, self._session_id)
