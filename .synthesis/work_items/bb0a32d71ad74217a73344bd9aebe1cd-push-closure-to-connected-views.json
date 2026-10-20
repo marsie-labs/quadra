@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 6,
+  "current_index": 7,
   "rejection_count": 0,
   "pbi_id": "push-closure-to-connected-views",
   "child_ids": [],
