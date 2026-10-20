@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "discard-pending-changes-on-closure",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0010.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: Canvas._unreflected treats any change to a card's updated_at as evidence that the pending edit, move or deletion is reflected, without recording or comparing the requested result. If another participant updates that card before closure while the pending operation remains uncommitted and its rejection response is delayed, reconciliation suppresses the required 'not saved' indication; track the intended change and compare it against the authoritative snapshot instead.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
