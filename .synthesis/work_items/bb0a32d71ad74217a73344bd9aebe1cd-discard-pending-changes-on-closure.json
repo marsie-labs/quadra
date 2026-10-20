@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "discard-pending-changes-on-closure",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0010.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: The new _persisted_ids query does not exhaust Supabase pagination: if the pending-insert batch exceeds the response limit, committed inserts omitted from that page are marked persisted=False and reported as not saved. This violates the Contract's requirement not to report pre-closure committed changes as unsaved; the added single-insert tests do not cover this case. it does not conform to the Constitution: The supplied architecture assigns session-scoped card loading to card-service and specifies that collaborative-canvas calls that service to load cards. Adding a direct cards-table query in canvas._persisted_ids, without session scoping, moves this persistence read across that architectural ownership boundary.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
