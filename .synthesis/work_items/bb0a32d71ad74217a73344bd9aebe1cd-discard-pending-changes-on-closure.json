@@ -31,7 +31,7 @@
       "gate": "ACCEPTANCE"
     }
   ],
-  "current_index": 5,
+  "current_index": 4,
   "rejection_count": 0,
   "pbi_id": "discard-pending-changes-on-closure",
   "child_ids": [],
@@ -42,7 +42,7 @@
     "PBI_PLANNING": "docs/pbis/SPEC-0003/PBI-0010.md"
   },
   "pending_artifacts": {},
-  "rework_notes": null,
+  "rework_notes": "Review rejected the previous attempt. it does not conform to the Contract: Pending-operation evidence is lost across reconciliation retries: if the first load fails and the rejected mutation response then arrives, _unresolved removes the request, so retrying captures an empty _requests list and never displays the required not-saved indication after successful authoritative reconciliation. Preserve the requests captured at closure until reconciliation succeeds; the added tests cover only successful first loads and miss this path.",
   "trunk_merge_pending": false,
   "clarification_questions": {},
   "clarifications": {},
