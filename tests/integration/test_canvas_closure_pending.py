@@ -190,11 +190,11 @@ async def _close_elsewhere(session_id: str, canvas: Canvas) -> None:
 
 
 def _assert_discarded(user: User, canvas: Canvas, card: cards.Card, generation: int) -> None:
-    """Closure was reconciled while the operation's response is delayed: it is not
-    reported yet, since only that response says whether the database committed it."""
+    """Closure was reconciled while the operation's response is delayed: the cards
+    show the change did not commit, so it is reported without waiting for the response."""
     assert canvas._generation > generation
     assert canvas._requests  # the response is still delayed
-    assert not _notice(user).visible
+    assert _notice(user).visible and _notice(user).text == _NOT_SAVED
     _assert_authoritative_closed_cards(user, canvas, card)
     _assert_read_only(user, canvas)
 
@@ -211,7 +211,7 @@ async def test_closure_discards_the_pending_operation_and_says_it_was_not_saved(
         await _close_elsewhere(session_id, canvas)
         _assert_discarded(user, canvas, card, generation)
 
-        # The delayed response then arrives: the database rejected it, so it is reported.
+        # The delayed response then arrives: the database rejected it; still reported.
         held.release.set()
         await _until(lambda: not canvas._requests)
         assert _notice(user).visible and _notice(user).text == _NOT_SAVED
@@ -266,13 +266,39 @@ async def test_rejected_edit_to_the_persisted_value_is_still_reported(
         held,
     ):
         await _close_elsewhere(session_id, canvas)
-        assert not _notice(user).visible
+        assert _notice(user).visible  # the card is still the version the edit started from
 
         held.release.set()
         await _until(lambda: not canvas._requests)
         assert _notice(user).visible and _notice(user).text == _NOT_SAVED
         (persisted,) = cards.list_cards(session_id)
         assert persisted == card
+        _assert_read_only(user, canvas)
+
+    caplog.clear()
+
+
+@pytest.mark.parametrize("operation", ["insert", "move", "delete"])
+async def test_operation_committed_before_closure_is_not_reported(
+    user: User, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, operation: str
+):
+    """A change that committed before closure is not 'not saved' while its response lags."""
+    async with _held_operation(user, monkeypatch, operation, after=True) as (
+        session_id,
+        card,
+        canvas,
+        held,
+    ):
+        await _close_elsewhere(session_id, canvas)
+        assert canvas._requests  # the success response is still delayed
+        assert not _notice(user).visible
+        committed = {"insert": 2, "move": 1, "delete": 0}[operation]
+        assert len(cards.list_cards(session_id)) == committed  # it did commit
+
+        held.release.set()
+        await _until(lambda: not canvas._requests)
+        await asyncio.sleep(0.5)
+        assert not _notice(user).visible
         _assert_read_only(user, canvas)
 
     caplog.clear()

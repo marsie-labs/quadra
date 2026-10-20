@@ -83,10 +83,15 @@ def _not_persisted(context):
     assert "_assert_authoritative_closed_cards" in HARNESS.read_text()
 
 
-@then("B displays that the pending change was not saved because the session closed")
+@then(
+    "B displays that the pending change was not saved because the session closed, "
+    "since the authoritative closed-session cards do not reflect it"
+)
 def _not_saved(context):
     assert context["result"].returncode == 0
-    assert "_NOT_SAVED" in HARNESS.read_text()
+    assert "assert _notice(user).visible and _notice(user).text == _NOT_SAVED" in (
+        HARNESS.read_text()
+    )
 
 
 @then("B remains read-only")

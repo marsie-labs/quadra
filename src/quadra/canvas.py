@@ -60,10 +60,13 @@ class _Request:
     The outcome comes only from the mutation's own response: "committed" if it
     succeeded, "rejected" if the database refused it because the session was closed.
     It stays None while the response is awaited, or if it failed some other way.
+    `base` is the card as this view held it when the request started (None for an insert),
+    so that a snapshot still showing that very version proves the request did not commit.
     """
 
     kind: str  # "insert", "edit", "move" or "delete"
     card_id: str
+    base: Card | None = None
     outcome: str | None = None
 
 
@@ -278,8 +281,8 @@ class Canvas:
 
         If the load fails the view stays closed and read-only, with a retry offered; an
         incomplete result is never shown as the finalized one. A request unresolved at
-        closure is reported unsaved once the snapshot is shown and its own response says
-        the database rejected it, whichever of the two comes last.
+        closure is reported unsaved once the snapshot is shown and either shows it did
+        not commit or its own response says the database rejected it.
         """
         try:
             snapshot, quadrant_ids = await self._load()
@@ -298,8 +301,8 @@ class Canvas:
     def _report_unsaved(self) -> None:
         """Say, once, that a change pending at closure was not saved because of it.
 
-        Only after the authoritative cards are shown, and only for a request whose own
-        response was the database's closed-session rejection.
+        Only after the authoritative cards are shown, and only for a request that those
+        cards show did not commit, or whose own response was the database's rejection.
         """
         if not self._unsaved_pending():
             return
@@ -308,10 +311,30 @@ class Canvas:
             ui.notify(self._unsaved_label.text, type="warning")
 
     def _unsaved_pending(self) -> bool:
-        """True if the unsaved report is due: reconciled, a rejection seen, not yet shown."""
+        """True if the unsaved report is due: reconciled, a change lost, not yet shown."""
         if not self._reconciled or self._stopped or self._unsaved_label.visible:
             return False
-        return any(request.outcome == "rejected" for request in self._closure_requests)
+        return any(self._not_saved(request) for request in self._closure_requests)
+
+    def _not_saved(self, request: _Request) -> bool:
+        """True if the database rejected `request`, or the shown cards prove it never landed.
+
+        Called once the authoritative closed cards are shown, so it need not wait for the
+        delayed response. A request that committed is never reported; one whose effect
+        cannot be told apart from another participant's change waits for its response.
+        """
+        if request.outcome is not None:
+            return request.outcome == "rejected"
+        return self._unreflected(request)
+
+    def _unreflected(self, request: _Request) -> bool:
+        """True if the shown authoritative cards prove `request` did not commit."""
+        card = self._cards.get(request.card_id)
+        if request.kind == "insert":
+            return card is None and request.card_id not in self._deleted
+        if card is None or request.base is None:
+            return False
+        return card.updated_at == request.base.updated_at
 
     async def _send(self, request: _Request, function, *args, **kwargs):
         """Run the card mutation `function` for `request` and record how it ended."""
@@ -413,7 +436,7 @@ class Canvas:
             ui.notify("Enter some text", type="warning")
             return
         generation = self._generation
-        request = _Request("edit", card_id)
+        request = _Request("edit", card_id, self._cards.get(card_id))
         with self._unresolved(request):
             card = await self._update(request, card_id, content, generation)
         if card is None or not self._is_current(generation):
@@ -444,7 +467,7 @@ class Canvas:
         if move is None:
             return
         generation = self._generation
-        request = _Request("move", card_id)
+        request = _Request("move", card_id, self._cards.get(card_id))
         with self._unresolved(request):
             card = await self._relocate(request, card_id, move.quadrant_id, move.index, generation)
         if not self._is_current(generation):
@@ -563,7 +586,7 @@ class Canvas:
             return
         generation = self._generation
         try:
-            request = _Request("delete", card_id)
+            request = _Request("delete", card_id, self._cards.get(card_id))
             with self._unresolved(request):
                 card = await self._send(request, cards.soft_delete_card, card_id)
         except cards.CardError:

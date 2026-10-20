@@ -9,5 +9,5 @@ Scenario: Discard pending changes rejected by closure
   When  B applies the closure notification
   Then  B removes pending optimistic overlays and renders the complete authoritative closed-session cards
   And  An uncommitted insertion is absent and an uncommitted edit, move or deletion is not displayed as persisted
-  And  B displays that the pending change was not saved because the session closed
+  And  B displays that the pending change was not saved because the session closed, since the authoritative closed-session cards do not reflect it
   And  B remains read-only
