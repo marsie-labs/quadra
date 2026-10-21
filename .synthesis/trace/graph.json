@@ -179,6 +179,166 @@
       "child": "collaborative-canvas",
       "parent": "ADR-0004",
       "kind": "governs"
+    },
+    {
+      "child": "quadra-app",
+      "parent": "SPEC-0003",
+      "kind": "implements"
+    },
+    {
+      "child": "session-service",
+      "parent": "SPEC-0003",
+      "kind": "implements"
+    },
+    {
+      "child": "supabase",
+      "parent": "SPEC-0003",
+      "kind": "implements"
+    },
+    {
+      "child": "card-service",
+      "parent": "SPEC-0003",
+      "kind": "implements"
+    },
+    {
+      "child": "realtime-service",
+      "parent": "SPEC-0003",
+      "kind": "implements"
+    },
+    {
+      "child": "collaborative-canvas",
+      "parent": "SPEC-0003",
+      "kind": "implements"
+    },
+    {
+      "child": "external-agent",
+      "parent": "SPEC-0003",
+      "kind": "implements"
+    },
+    {
+      "child": "quadra-app",
+      "parent": "ADR-0005",
+      "kind": "governs"
+    },
+    {
+      "child": "quadra-app",
+      "parent": "ADR-0006",
+      "kind": "governs"
+    },
+    {
+      "child": "quadra-app",
+      "parent": "ADR-0007",
+      "kind": "governs"
+    },
+    {
+      "child": "session-service",
+      "parent": "ADR-0005",
+      "kind": "governs"
+    },
+    {
+      "child": "session-service",
+      "parent": "ADR-0006",
+      "kind": "governs"
+    },
+    {
+      "child": "session-service",
+      "parent": "ADR-0007",
+      "kind": "governs"
+    },
+    {
+      "child": "supabase",
+      "parent": "ADR-0005",
+      "kind": "governs"
+    },
+    {
+      "child": "supabase",
+      "parent": "ADR-0006",
+      "kind": "governs"
+    },
+    {
+      "child": "supabase",
+      "parent": "ADR-0007",
+      "kind": "governs"
+    },
+    {
+      "child": "card-service",
+      "parent": "ADR-0005",
+      "kind": "governs"
+    },
+    {
+      "child": "card-service",
+      "parent": "ADR-0006",
+      "kind": "governs"
+    },
+    {
+      "child": "card-service",
+      "parent": "ADR-0007",
+      "kind": "governs"
+    },
+    {
+      "child": "realtime-service",
+      "parent": "ADR-0005",
+      "kind": "governs"
+    },
+    {
+      "child": "realtime-service",
+      "parent": "ADR-0006",
+      "kind": "governs"
+    },
+    {
+      "child": "realtime-service",
+      "parent": "ADR-0007",
+      "kind": "governs"
+    },
+    {
+      "child": "collaborative-canvas",
+      "parent": "ADR-0005",
+      "kind": "governs"
+    },
+    {
+      "child": "collaborative-canvas",
+      "parent": "ADR-0006",
+      "kind": "governs"
+    },
+    {
+      "child": "collaborative-canvas",
+      "parent": "ADR-0007",
+      "kind": "governs"
+    },
+    {
+      "child": "external-agent",
+      "parent": "ADR-0001",
+      "kind": "governs"
+    },
+    {
+      "child": "external-agent",
+      "parent": "ADR-0002",
+      "kind": "governs"
+    },
+    {
+      "child": "external-agent",
+      "parent": "ADR-0003",
+      "kind": "governs"
+    },
+    {
+      "child": "external-agent",
+      "parent": "ADR-0004",
+      "kind": "governs"
+    },
+    {
+      "child": "external-agent",
+      "parent": "ADR-0005",
+      "kind": "governs"
+    },
+    {
+      "child": "external-agent",
+      "parent": "ADR-0006",
+      "kind": "governs"
+    },
+    {
+      "child": "external-agent",
+      "parent": "ADR-0007",
+      "kind": "governs"
     }
   ],
   "satisfies": []

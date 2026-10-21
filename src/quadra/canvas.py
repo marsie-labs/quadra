@@ -12,7 +12,9 @@ display name a participant types is kept per connected view: it is not an identi
 import asyncio
 import logging
 import uuid
-from dataclasses import asdict, dataclass, fields, replace
+from collections.abc import Iterator
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass, field, fields, replace
 from datetime import datetime
 
 from nicegui import Client, ui
@@ -20,7 +22,7 @@ from nicegui import Client, ui
 from quadra import cards, realtime
 from quadra.cards import Card
 from quadra.realtime import SessionChange
-from quadra.sessions import Session, get_client
+from quadra.sessions import Session, close_session, get_client, get_session_status
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,26 @@ class _PendingMove:
     index: int
     origin_quadrant_id: str
     origin_index: int
+
+
+@dataclass(eq=False)
+class _Request:
+    """A card mutation request, identified by itself, and what its response said.
+
+    The outcome comes only from the mutation's own response: "committed" if it
+    succeeded, "rejected" if the database refused it because the session was closed.
+    It stays None while the response is awaited, or if it failed some other way.
+    `base` is the card as this view held it when the request started (None for an insert),
+    so that a snapshot still showing that very version does not reflect the request.
+    `intended` holds the card fields the request asks for (content of an edit, placement
+    of a move), so a snapshot is compared with the requested result, not just with `base`.
+    """
+
+    kind: str  # "insert", "edit", "move" or "delete"
+    card_id: str
+    base: Card | None = None
+    intended: dict[str, object] = field(default_factory=dict)
+    outcome: str | None = None
 
 
 def _load_quadrant_ids(session_id: str) -> list[str]:
@@ -106,6 +128,21 @@ class Canvas:
         self._client: Client = ui.context.client
         self._columns: list[ui.column] = []
         self._submit_buttons: list[ui.button] = []
+        self._close_button = ui.button("Close session", on_click=self._close)
+        self._close_button.mark("close-session")
+        self._closed_label = ui.label("Session closed").classes("text-h6 text-negative")
+        self._closed_label.mark("session-closed").set_visibility(False)
+        self._failure_label = ui.label("Session could not be closed").classes("text-negative")
+        self._failure_label.mark("closure-failed").set_visibility(False)
+        self._reload_failure = ui.row().mark("reload-failed")
+        with self._reload_failure:
+            ui.label("Closed session cards could not be reloaded").classes("text-negative")
+            ui.button("Retry", on_click=self._retry_reconcile).mark("retry-reload")
+        self._reload_failure.set_visibility(False)
+        self._unsaved_label = ui.label(
+            "Your pending change was not saved because the session closed"
+        ).classes("text-negative")
+        self._unsaved_label.mark("change-not-saved").set_visibility(False)
         self._display_name = ui.input("Your display name").mark("display-name")
         with ui.grid(columns=2).classes("w-full"):
             for position, name in enumerate(session.quadrants):
@@ -125,6 +162,222 @@ class Canvas:
         self._loading = True
         self._registration: asyncio.Future[None] | None = None
         self._stopped = False  # the client disconnected
+        # A closed state was received (or the session was loaded closed); it is never undone.
+        self._closed = session.status == "closed"
+        self._closing = False  # a closure request is unresolved: editing is suspended
+        # Responses of requests started before the latest bump are stale: closure bumps it,
+        # so no older mutation result or load can change what closure reconciled.
+        self._generation = 0
+        self._reconciliation: asyncio.Task[None] | None = None
+        self._reconciled = False  # the closed cards were loaded and shown
+        self._requests: list[_Request] = []  # mutation requests awaiting their response
+        # Requests unresolved when closure was first seen; kept until a reconciliation
+        # succeeds, so a retried reload still judges them after their responses arrived.
+        self._closure_requests: list[_Request] = []
+        if self._closed:
+            self._show_closed()
+
+    @property
+    def _editable(self) -> bool:
+        return not (self._closed or self._closing)
+
+    def _is_current(self, generation: int) -> bool:
+        """True while no closure has invalidated the requests of `generation`."""
+        return generation == self._generation
+
+    def _is_live(self, generation: int) -> bool:
+        """True while `generation` is current and the client is still connected."""
+        return self._is_current(generation) and not self._stopped
+
+    def _show_reload_failure(self, generation: int) -> None:
+        """Offer a retry when the closed session's cards could not be reloaded."""
+        if self._is_live(generation):
+            with self._client:
+                self._reload_failure.set_visibility(True)
+
+    async def _close(self) -> None:
+        """Ask the session service to close the session, then show it as closed.
+
+        Any participant may do this: no credentials or role are checked. The control is
+        not the enforcement; the database is. Editing is suspended while the request is
+        unresolved; if it fails, the lifecycle state is read before editing is restored.
+        """
+        self._closing = True
+        self._close_button.disable()
+        self._failure_label.set_visibility(False)
+        self._refresh_editing()
+        try:
+            status = await asyncio.to_thread(close_session, self._session_id)
+        except Exception:
+            logger.exception("Session %s could not be closed", self._session_id)
+            status = None
+        if status == "closed":
+            self._set_closed()
+            return
+        await self._recover_from_failed_close()
+
+    async def _recover_from_failed_close(self) -> None:
+        """Report the failure, then let the authoritative state decide about editing.
+
+        Editing returns only if that state is open and no closed state was received
+        meanwhile; if the state cannot be read or is closed, the canvas stays frozen.
+        """
+        if not self._closed:
+            self._failure_label.set_visibility(True)
+        ui.notify("Session could not be closed", type="negative")
+        status = await self._read_status()
+        if status == "closed":
+            self._set_closed()
+        elif status == "open" and not self._closed:
+            self._closing = False
+            self._close_button.enable()
+            self._refresh_editing()
+
+    async def _read_status(self) -> str | None:
+        """The session's authoritative lifecycle state, or None if it cannot be read."""
+        try:
+            return await asyncio.to_thread(get_session_status, self._session_id)
+        except Exception:
+            logger.exception("State of session %s could not be read", self._session_id)
+            return None
+
+    def _set_closed(self) -> None:
+        """Latch the closed state: read-only for good, whatever happens to a request.
+
+        The first sight of closure also invalidates every older response generation,
+        drops the optimistic overlays and reloads the authoritative cards.
+        """
+        first = not self._closed
+        if first:
+            self._closure_requests = list(self._requests)
+        self._closed = True
+        self._closing = False
+        self._show_closed()
+        if first:
+            self._start_reconciliation()
+        self._refresh_editing()
+
+    def _show_closed(self) -> None:
+        """Offer no way to close again, and say that the session is closed."""
+        self._close_button.set_visibility(False)
+        self._failure_label.set_visibility(False)
+        self._closed_label.set_visibility(True)
+
+    def _start_reconciliation(self) -> None:
+        """Invalidate older responses, drop optimistic overlays, reload the cards."""
+        self._generation += 1
+        self._pending.clear()
+        self._moving.clear()
+        self._drafts.clear()
+        self._reconciled = False
+        self._reload_failure.set_visibility(False)
+        self._reconciliation = asyncio.ensure_future(
+            self._reconcile(self._generation)
+        )
+
+    async def _retry_reconcile(self) -> None:
+        self._start_reconciliation()
+        self._refresh_editing()
+
+    async def _reconcile(self, generation: int) -> None:
+        """Replace the cards with the complete authoritative snapshot, unless superseded.
+
+        If the load fails the view stays closed and read-only, with a retry offered; an
+        incomplete result is never shown as the finalized one. A request unresolved at
+        closure is reported unsaved once the snapshot is shown and does not reflect it,
+        or its own response says the database rejected it.
+        """
+        try:
+            snapshot, quadrant_ids = await self._load()
+        except Exception:
+            logger.exception("Closed session %s could not be reloaded", self._session_id)
+            self._show_reload_failure(generation)
+            return
+        if not self._is_live(generation):
+            return
+        self._quadrant_ids = quadrant_ids
+        self._buffered = []
+        self._show(snapshot)
+        self._reconciled = True
+        self._sync_unsaved()
+
+    def _sync_unsaved(self) -> None:
+        """Show the 'not saved' notice while a change pending at closure is not reflected.
+
+        Only after the authoritative cards are shown. The notice is announced once, and
+        removed when the delayed success response of the last unreflected change arrives.
+        """
+        if self._reconciled and not self._stopped:
+            self._set_unsaved(any(self._not_saved(r) for r in self._closure_requests))
+
+    def _set_unsaved(self, due: bool) -> None:
+        """Show or hide the notice; announce it only when it newly appears."""
+        if due == self._unsaved_label.visible:
+            return
+        with self._client:
+            self._unsaved_label.set_visibility(due)
+            if due:
+                ui.notify(self._unsaved_label.text, type="warning")
+
+    def _not_saved(self, request: _Request) -> bool:
+        """True if the database rejected `request`, or the shown cards do not reflect it.
+
+        Called once the authoritative closed cards are shown, so it need not wait for the
+        delayed response. A response that says the request committed always clears it.
+        """
+        if request.outcome is not None:
+            return request.outcome == "rejected"
+        return self._unreflected(request)
+
+    def _unreflected(self, request: _Request) -> bool:
+        """True if the shown authoritative cards do not reflect `request`.
+
+        An edit or move is reflected only if the card changed since the request started
+        and now holds the requested result, so another participant's update to the card
+        does not stand in for it. Known limit: a change later overwritten or deleted by
+        another participant cannot be told apart from an unsaved one; its delayed
+        success response removes the notice.
+        """
+        card = self._cards.get(request.card_id)
+        if request.kind == "delete":
+            return card is not None
+        if card is None:
+            return True
+        return request.kind != "insert" and self._not_updated(request, card)
+
+    @staticmethod
+    def _not_updated(request: _Request, card: Card) -> bool:
+        """True if `card` is still the version the request started from, or lacks its result."""
+        if request.base is not None and card.updated_at == request.base.updated_at:
+            return True
+        return any(getattr(card, name) != value for name, value in request.intended.items())
+
+    async def _send(self, request: _Request, function, *args, **kwargs):
+        """Run the card mutation `function` for `request` and record how it ended."""
+        try:
+            result = await asyncio.to_thread(function, self._session_id, *args, **kwargs)
+        except cards.CardSessionClosedError:
+            request.outcome = "rejected"
+            self._sync_unsaved()
+            raise
+        request.outcome = "committed"
+        self._sync_unsaved()
+        return result
+
+    @contextmanager
+    def _unresolved(self, request: _Request) -> Iterator[None]:
+        """Keep `request` on record while its response is awaited."""
+        self._requests.append(request)
+        try:
+            yield
+        finally:
+            self._requests.remove(request)
+
+    def _refresh_editing(self) -> None:
+        """Make the composers and the cards' controls follow whether editing is allowed."""
+        for button in self._submit_buttons:
+            button.set_enabled(self._editable and not self._loading)
+        self._render_all(*self._quadrant_ids)
 
     def _compose(self, position: int) -> None:
         """The card composer of quadrant `position`, marked content-N and submit-N.
@@ -144,15 +397,22 @@ class Canvas:
         replaced by the confirmed card.
         """
         name, content = self._entered(composer)
+        if not self._editable:
+            return
         if not self._submittable(name, content):
             ui.notify("Enter a display name and some text", type="warning")
             return
+        generation = self._generation
         quadrant_id = self._quadrant_ids[position]
         pending = _PendingCard(str(uuid.uuid4()), quadrant_id, content, name)
         index = self._next_index(quadrant_id)
         self._pending[pending.id] = pending
         self._render(quadrant_id)
-        card = await self._insert(pending, index)
+        request = _Request("insert", pending.id)
+        with self._unresolved(request):
+            card = await self._insert(request, pending, index, generation)
+        if not self._is_current(generation):
+            return  # closure dropped the overlay and reconciled the cards
         self._pending.pop(pending.id, None)
         if card is None:
             self._render(quadrant_id)
@@ -161,12 +421,14 @@ class Canvas:
         # The push of this same insert may have arrived already; cards are keyed by id.
         self._show_confirmed(card, quadrant_id)
 
-    async def _insert(self, pending: _PendingCard, index: int) -> Card | None:
+    async def _insert(
+        self, request: _Request, pending: _PendingCard, index: int, generation: int
+    ) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be added."""
         try:
-            return await asyncio.to_thread(
+            return await self._send(
+                request,
                 cards.insert_card,
-                self._session_id,
                 pending.quadrant_id,
                 index,
                 pending.content,
@@ -175,7 +437,8 @@ class Canvas:
             )
         except cards.CardError:
             logger.exception("Card could not be added to session %s", self._session_id)
-            ui.notify("Card could not be added", type="negative")
+            if self._is_current(generation):
+                ui.notify("Card could not be added", type="negative")
             return None
 
     async def _save_edit(self, card_id: str) -> None:
@@ -183,18 +446,32 @@ class Canvas:
 
         Only the content is sent: authorship and creation time stay the card's own.
         """
+        if not self._editable:
+            return
         content = self._drafts.get(card_id, "")
         if not content.strip():
             ui.notify("Enter some text", type="warning")
             return
-        try:
-            card = await asyncio.to_thread(cards.update_card, self._session_id, card_id, content)
-        except cards.CardError:
-            logger.exception("Card %s could not be updated", card_id)
-            ui.notify("Card could not be updated", type="negative")
+        generation = self._generation
+        request = _Request("edit", card_id, self._cards.get(card_id), {"content": content})
+        with self._unresolved(request):
+            card = await self._update(request, card_id, content, generation)
+        if card is None or not self._is_current(generation):
             return
         self._drafts.pop(card_id, None)
         self._show_confirmed(card)
+
+    async def _update(
+        self, request: _Request, card_id: str, content: str, generation: int
+    ) -> Card | None:
+        """The confirmed card, or None (after showing an error) if it could not be updated."""
+        try:
+            return await self._send(request, cards.update_card, card_id, content)
+        except cards.CardError:
+            logger.exception("Card %s could not be updated", card_id)
+            if self._is_current(generation):
+                ui.notify("Card could not be updated", type="negative")
+            return None
 
     async def _move(self, card_id: str, position: int | None, index: float | None) -> None:
         """Move the card to quadrant `position` at `index` and show the confirmed placement.
@@ -203,10 +480,20 @@ class Canvas:
         quadrant and index are remembered. Only the placement is sent: authorship and
         creation time stay the card's own.
         """
-        move = self._start_move(card_id, position, index)
+        move = self._start_move(card_id, position, index) if self._editable else None
         if move is None:
             return
-        card = await self._relocate(card_id, move.quadrant_id, move.index)
+        generation = self._generation
+        request = _Request(
+            "move",
+            card_id,
+            self._cards.get(card_id),
+            {"quadrant_id": move.quadrant_id, "index": move.index},
+        )
+        with self._unresolved(request):
+            card = await self._relocate(request, card_id, move.quadrant_id, move.index, generation)
+        if not self._is_current(generation):
+            return
         shown = self._clear_move(move)
         if card is None:
             self._render_all(*shown, *self._current_quadrants(card_id))
@@ -268,15 +555,16 @@ class Canvas:
         for quadrant_id in affected | self._current_quadrants(card.id):
             self._render(quadrant_id)
 
-    async def _relocate(self, card_id: str, quadrant_id: str, index: int) -> Card | None:
+    async def _relocate(
+        self, request: _Request, card_id: str, quadrant_id: str, index: int, generation: int
+    ) -> Card | None:
         """The confirmed card, or None (after showing an error) if it could not be moved."""
         try:
-            return await asyncio.to_thread(
-                cards.relocate_card, self._session_id, card_id, quadrant_id, index
-            )
+            return await self._send(request, cards.relocate_card, card_id, quadrant_id, index)
         except cards.CardError:
             logger.exception("Card %s could not be moved", card_id)
-            ui.notify("Card could not be moved", type="negative")
+            if self._is_current(generation):
+                ui.notify("Card could not be moved", type="negative")
             return None
 
     def _mover(self, card: Card) -> None:
@@ -316,11 +604,19 @@ class Canvas:
         the Realtime push of the committed update.
         """
         self._dismiss(dialog)
+        if not self._editable:
+            return
+        generation = self._generation
         try:
-            card = await asyncio.to_thread(cards.soft_delete_card, self._session_id, card_id)
+            request = _Request("delete", card_id, self._cards.get(card_id))
+            with self._unresolved(request):
+                card = await self._send(request, cards.soft_delete_card, card_id)
         except cards.CardError:
             logger.exception("Card %s could not be deleted", card_id)
-            ui.notify("Card could not be deleted", type="negative")
+            if self._is_current(generation):
+                ui.notify("Card could not be deleted", type="negative")
+            return
+        if not self._is_current(generation):
             return
         # The push of this same deletion may have arrived already; the fold is idempotent.
         self._show_confirmed(card, *self._clear_optimistic(card.id))
@@ -358,9 +654,11 @@ class Canvas:
     async def start(self) -> None:
         """Register for pushes, then load the active cards and show them."""
         await self._client.connected()
-        snapshot = await self._register_and_load()
-        if snapshot is None or self._stopped:
-            return
+        generation = self._generation
+        loaded = await self._register_and_load()
+        if loaded is None or self._stopped or not self._is_current(generation):
+            return  # a closure meanwhile reloads the cards and quadrants itself
+        snapshot, self._quadrant_ids = loaded
         self._show(snapshot)
 
     def _show(self, snapshot: list[Card]) -> None:
@@ -372,11 +670,11 @@ class Canvas:
         self._buffered = []
         with self._client:
             for button in self._submit_buttons:
-                button.enable()
+                button.set_enabled(self._editable)
             for quadrant_id in self._quadrant_ids:
                 self._render(quadrant_id)
 
-    async def _register_and_load(self) -> list[Card] | None:
+    async def _register_and_load(self) -> tuple[list[Card], list[str]] | None:
         """Subscribe, then load the snapshot; None (after showing an error) on failure."""
         # Cleanup comes first: a disconnect while the subscription is becoming ready
         # must still release it once registration settles.
@@ -388,7 +686,9 @@ class Canvas:
             await asyncio.shield(self._registration)
             if self._stopped:
                 return None
-            snapshot, self._quadrant_ids = await self._load()
+            if await self._reconcile_lifecycle():
+                return None  # closed: the reconciliation loads the finalized cards
+            loaded = await self._load()
         except Exception:
             logger.exception("Cards of session %s could not be loaded", self._session_id)
             if self._stopped:
@@ -396,7 +696,25 @@ class Canvas:
             with self._client:
                 ui.label("Cards could not be loaded").classes("text-negative")
             return None
-        return snapshot
+        return loaded
+
+    async def _reconcile_lifecycle(self) -> bool:
+        """After registration, take the authoritative lifecycle state; True if closed.
+
+        Closure is only ever latched, never undone: an open answer, or one that cannot
+        be read, leaves a closure received by push in the meantime in place. A closed
+        session is loaded by the reconciliation, whose failure offers a retry.
+        """
+        status = await self._read_status()
+        if self._stopped:
+            return False
+        with self._client:
+            if status == "closed":
+                self._set_closed()
+            if self._closed and self._reconciliation is None:
+                self._start_reconciliation()  # loaded closed: nothing reconciled it yet
+                self._refresh_editing()
+        return self._closed
 
     async def _load(self) -> tuple[list[Card], list[str]]:
         snapshot = await asyncio.to_thread(cards.list_cards, self._session_id)
@@ -411,7 +729,18 @@ class Canvas:
         await realtime.unregister_view(self._session_id, str(self._client.id))
 
     def _on_change(self, change: SessionChange) -> None:
-        if change.table != "cards":
+        if change.table == "workspaces":
+            self._on_session_change(change.record)
+            return
+        if change.table == "cards":
+            self._on_card_change(change)
+
+    def _on_card_change(self, change: SessionChange) -> None:
+        """Fold a card notification, unless closure made the authoritative load final."""
+        if self._closed:
+            # The database accepts no card change after closure, so the reconciliation's
+            # authoritative load holds every card, and a notification still on its way is
+            # older than it. Folding one would resurrect a deleted card or revert one.
             return
         if self._loading:
             self._buffered.append(change)
@@ -419,6 +748,12 @@ class Canvas:
         with self._client:
             for quadrant_id in self._fold(change.record):
                 self._render(quadrant_id)
+
+    def _on_session_change(self, record: dict) -> None:
+        """A closed state received by push latches at once, whatever a request is doing."""
+        if record.get("status") == "closed":
+            with self._client:
+                self._set_closed()
 
     def _fold(self, record: dict) -> set[str]:
         """Fold one card record into the cards; return the quadrants it affects."""
@@ -510,6 +845,17 @@ class Canvas:
             ui.label(pending.creator_display_name).classes("text-caption")
             ui.label("Pending").classes("text-caption text-orange")
 
+    def _card_body(self, card: Card, interactive: bool) -> None:
+        """The card's open editor, or its content with controls only if `interactive`."""
+        if interactive and card.id in self._drafts:
+            self._editor(card)
+            return
+        ui.label(card.content)
+        if interactive:
+            ui.button("Edit", on_click=lambda: self._open_editor(card)).mark(f"edit-{card.id}")
+            ui.button("Delete", on_click=lambda: self._ask_delete(card)).mark(f"delete-{card.id}")
+            self._mover(card)
+
     def _card_view(self, card: Card, pending: bool = False) -> None:
         """One card: its content or open editor, its creator and its creation time.
 
@@ -519,16 +865,7 @@ class Canvas:
         with ui.card().tight().classes("p-2 opacity-50" if pending else "p-2") as view:
             if pending:
                 view.mark(f"pending-{card.id}")
-                ui.label(card.content)
-            elif card.id in self._drafts:
-                self._editor(card)
-            else:
-                ui.label(card.content)
-                ui.button("Edit", on_click=lambda: self._open_editor(card)).mark(f"edit-{card.id}")
-                ui.button("Delete", on_click=lambda: self._ask_delete(card)).mark(
-                    f"delete-{card.id}"
-                )
-                self._mover(card)
+            self._card_body(card, interactive=self._editable and not pending)
             ui.label(card.creator_display_name).classes("text-caption")
             created = _instant(card.created_at).strftime("%Y-%m-%d %H:%M:%S %Z")
             ui.badge(created, color="grey-7")
