@@ -732,7 +732,15 @@ class Canvas:
         if change.table == "workspaces":
             self._on_session_change(change.record)
             return
-        if change.table != "cards":
+        if change.table == "cards":
+            self._on_card_change(change)
+
+    def _on_card_change(self, change: SessionChange) -> None:
+        """Fold a card notification, unless closure made the authoritative load final."""
+        if self._closed:
+            # The database accepts no card change after closure, so the reconciliation's
+            # authoritative load holds every card, and a notification still on its way is
+            # older than it. Folding one would resurrect a deleted card or revert one.
             return
         if self._loading:
             self._buffered.append(change)
