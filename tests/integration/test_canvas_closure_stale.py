@@ -1,5 +1,5 @@
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 
 import pytest
 from nicegui import ui
@@ -8,6 +8,7 @@ from nicegui.testing import User
 from quadra import app as quadra_app
 from quadra import cards
 from quadra.canvas import Canvas, _load_quadrant_ids
+from quadra.realtime import SessionChange
 from quadra.sessions import close_session, create_session
 
 # Shared harness of the closure tests.
@@ -17,6 +18,7 @@ from test_canvas_closure_pending import (  # noqa: F401
     _close_elsewhere,
     _held_operation,
     _notice,
+    _record_canvases,
     _texts,
     _until,
 )
@@ -198,4 +200,48 @@ async def test_older_reconciliation_response_after_a_newer_one_is_ignored(
         _assert_closed_and_authoritative(user, canvas, before, [moved])
     finally:
         hold.release.set()
+        await _release_all(session_id)
+
+
+def _delayed(canvas: Canvas, record: dict) -> None:
+    """Deliver a card notification that was still on its way when closure reconciled."""
+    canvas._on_change(
+        SessionChange(
+            session_id=canvas._session_id,
+            table="cards",
+            event="UPDATE",
+            record=record,
+            old_record={},
+            commit_timestamp="2000-01-01T00:00:00+00:00",
+        )
+    )
+
+
+async def test_delayed_notifications_of_a_card_deleted_before_closure_are_ignored(
+    user: User, monkeypatch: pytest.MonkeyPatch
+):
+    canvases = _record_canvases(monkeypatch)
+    session_id = create_session("Closure Deleted Card").session_id
+    quadrant_ids = _load_quadrant_ids(session_id)
+    kept = cards.insert_card(session_id, quadrant_ids[0], 0, "Kept", "Alice")
+    inserted = cards.insert_card(session_id, quadrant_ids[0], 1, "Doomed", "Bob")
+    edited = cards.update_card(session_id, inserted.id, "Doomed edit")
+    cards.soft_delete_card(session_id, inserted.id)
+    await asyncio.to_thread(close_session, session_id)
+    try:
+        await user.open(f"/sessions/{session_id}")
+        (canvas,) = canvases
+        await _until(lambda: canvas._reconciled)
+        assert canvas._cards == {kept.id: kept}
+        before = _shown(canvas)
+
+        _delayed(canvas, asdict(inserted))  # the insert, from before the deletion
+        _delayed(canvas, asdict(edited))  # the update, from before the deletion
+        # A retained card's notification, even a newer one, leaves the snapshot alone.
+        _delayed(canvas, asdict(replace(kept, content="Newer", updated_at="2999-01-01T00:00:00+00:00")))
+
+        _assert_closed_and_authoritative(user, canvas, before, [kept])
+        assert not any("Doomed" in text for column in before[1] for text in column)
+        assert "Newer" not in _texts(user.current_layout)
+    finally:
         await _release_all(session_id)
